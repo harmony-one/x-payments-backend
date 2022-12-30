@@ -14,11 +14,12 @@ import {
 import { StripeService } from './stripe.service';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { ApiTags } from '@nestjs/swagger';
+
 @ApiTags('stripe')
 @Controller('/stripe')
 export class StripeController {
   private readonly logger = new Logger(StripeController.name);
-  constructor(private readonly stipeService: StripeService) {}
+  constructor(private readonly stripeService: StripeService) {}
 
   @Get('/checkout')
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -26,7 +27,7 @@ export class StripeController {
     @Res() res,
     @Query() stripeCheckoutDto: StripeCheckoutDto,
   ) {
-    const session = await this.stipeService.createStripeSession(
+    const session = await this.stripeService.createStripeSession(
       stripeCheckoutDto,
     );
     res.redirect(303, session.url);
@@ -40,7 +41,7 @@ export class StripeController {
     @Res() res,
     @Req() req,
   ) {
-    // const event = this.stipeService.verifyEvent(req.body, sig);
+    // const event = this.stripeService.verifyEvent(req.body, sig);
     // if (!event) {
     //   console.log('error!');
     // } else {
