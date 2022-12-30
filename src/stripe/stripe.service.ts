@@ -25,9 +25,23 @@ export class StripeService {
         },
       ],
       mode,
-      success_url: `${clientUrl}?success=true`,
-      cancel_url: `${clientUrl}?canceled=true`,
+      success_url: `${clientUrl}/success`,
+      cancel_url: `${clientUrl}/canceled`,
     });
     return session;
+  }
+
+  // Verify that request is from Stripe
+  // https://stripe.com/docs/payments/checkout/fulfill-orders
+  verifyEvent(payload: any, sig: string) {
+    let event;
+    const endpointSecret = this.configService.get('stripe.endpointSecret');
+    try {
+      event = this.stripe.webhooks.constructEvent(payload, sig, endpointSecret);
+    } catch (err) {
+      console.log('Error:', err.message);
+      return null;
+    }
+    return event;
   }
 }
