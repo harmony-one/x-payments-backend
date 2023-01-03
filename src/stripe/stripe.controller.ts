@@ -30,7 +30,17 @@ export class StripeController {
     const session = await this.stripeService.createStripeSession(
       stripeCheckoutDto,
     );
+    await this.stripeService.saveStripeSession(session);
     res.redirect(303, session.url);
+  }
+
+  @Post('/create-payment-intent')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createPaymentIntent(@Body() body) {
+    const paymentIntent = await this.stripeService.createPaymentIntent();
+    return {
+      clientSecret: paymentIntent.client_secret,
+    };
   }
 
   @Post('/webhook')
