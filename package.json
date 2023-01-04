@@ -27,11 +27,13 @@
     "@nestjs/typeorm": "^9.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "one-country-sdk": "^0.3.0",
     "pg": "^8.8.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.5.5",
     "stripe": "^11.5.0",
-    "typeorm": "^0.3.11"
+    "typeorm": "^0.3.11",
+    "web3": "^1.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

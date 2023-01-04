@@ -6,7 +6,9 @@ import { AppService } from './app.service';
 import configuration from './config';
 import { StripeController } from './stripe/stripe.controller';
 import { StripeService } from './stripe/stripe.service';
+import { Web3Module } from './web3/web3.module';
 import entities from './typeorm';
+import { Web3Service } from './web3/web3.service';
 
 @Module({
   imports: [
@@ -28,8 +30,9 @@ import entities from './typeorm';
       }),
       inject: [ConfigService],
     }),
+    Web3Module,
   ],
   controllers: [AppController, StripeController],
-  providers: [AppService, StripeService],
+  providers: [AppService, StripeService, Web3Service],
 })
 export class AppModule {}

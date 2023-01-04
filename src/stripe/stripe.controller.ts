@@ -14,12 +14,16 @@ import {
 import { StripeService } from './stripe.service';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { Web3Service } from '../web3/web3.service';
 
 @ApiTags('stripe')
 @Controller('/stripe')
 export class StripeController {
   private readonly logger = new Logger(StripeController.name);
-  constructor(private readonly stripeService: StripeService) {}
+  constructor(
+    private readonly stripeService: StripeService,
+    private readonly web3Service: Web3Service,
+  ) {}
 
   @Get('/checkout')
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -57,8 +61,14 @@ export class StripeController {
     // } else {
     //   console.log('verified!');
     // }
+    this.logger.log(`Received event id: ${body.id}, type: ${body.type}`);
+
     if (body.type === 'checkout.session.completed') {
       this.logger.log(`Stripe request completed: ${body.id}`);
     }
+
+    // Test request to contract
+    const price = await this.web3Service.getPriceByName('all');
+    this.logger.log(`Test price: ${price}`);
   }
 }
