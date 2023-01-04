@@ -1,8 +1,8 @@
 import * as process from 'process';
 
 export default () => ({
-  oneCountry: {
-    clientUrl: process.env.ONE_COUNTRY_CLIENT_URL || '',
+  client: {
+    url: process.env.CLIENT_URL || '',
   },
   stripe: {
     priceId: process.env.STRIPE_PRICE_ID || '',

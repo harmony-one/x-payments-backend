@@ -19,7 +19,7 @@ export class StripeService {
   async createStripeSession(dto: StripeCheckoutDto) {
     const { mode } = dto;
 
-    const clientUrl = this.configService.get('oneCountry.clientUrl');
+    const clientUrl = this.configService.get('client.url');
     const priceId = this.configService.get('stripe.priceId');
     const subscriptionPriceId = this.configService.get(
       'stripe.subscriptionPriceId',
