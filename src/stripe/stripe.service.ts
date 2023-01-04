@@ -21,12 +21,15 @@ export class StripeService {
 
     const clientUrl = this.configService.get('oneCountry.clientUrl');
     const priceId = this.configService.get('stripe.priceId');
+    const subscriptionPriceId = this.configService.get(
+      'stripe.subscriptionPriceId',
+    );
 
     const session = await this.stripe.checkout.sessions.create({
       line_items: [
         {
           // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-          price: priceId,
+          price: mode === 'payment' ? priceId : subscriptionPriceId,
           quantity: 1,
         },
       ],

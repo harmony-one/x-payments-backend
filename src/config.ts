@@ -6,6 +6,7 @@ export default () => ({
   },
   stripe: {
     priceId: process.env.STRIPE_PRICE_ID || '',
+    subscriptionPriceId: process.env.STRIPE_SUBSCRIPTION_PRICE_ID || '',
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     endpointSecret: process.env.STRIPE_ENDPOINT_SECRET || '',
     apiVersion: process.env.STRIPE_API_VERSION || '2022-11-15',
