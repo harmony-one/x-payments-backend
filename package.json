@@ -33,6 +33,7 @@
     "rxjs": "^7.5.5",
     "stripe": "^11.5.0",
     "typeorm": "^0.3.11",
+    "uuid": "^9.0.0",
     "web3": "^1.8.1"
   },
   "devDependencies": {

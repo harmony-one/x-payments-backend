@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { StripeCheckoutDto } from './dto/checkout.dto';
+import { StripeMode } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
-import { StripeCheckoutSession } from '../typeorm';
+import { Payments, StripeCheckoutSession } from '../typeorm';
+import { PaymentStatus } from '../typeorm/payments.entity';
 
 @Injectable()
 export class StripeService {
@@ -16,9 +17,7 @@ export class StripeService {
     const apiVersion = configService.get('stripe.apiVersion');
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
-  async createStripeSession(dto: StripeCheckoutDto) {
-    const { mode } = dto;
-
+  async createStripeSession(mode = StripeMode.payment) {
     const clientUrl = this.configService.get('client.url');
     const priceId = this.configService.get('stripe.priceId');
     const subscriptionPriceId = this.configService.get(
@@ -48,6 +47,39 @@ export class StripeService {
     return result;
   }
 
+  async createPayment(
+    sessionId: string,
+    ownerAddress: string,
+    subscriberAddress: string,
+  ) {
+    await this.dataSource.manager.insert(Payments, {
+      sessionId,
+      ownerAddress,
+      subscriberAddress,
+    });
+  }
+
+  async getPaymentBySessionId(sessionId: string) {
+    const row = await this.dataSource.manager.findOne(Payments, {
+      where: {
+        sessionId,
+      },
+    });
+    return row;
+  }
+
+  async setPaymentStatus(sessionId: string, status: PaymentStatus) {
+    await this.dataSource.manager.update(
+      Payments,
+      {
+        sessionId,
+      },
+      {
+        status,
+      },
+    );
+  }
+
   // Verify that request is from Stripe
   // https://stripe.com/docs/payments/checkout/fulfill-orders
   verifyEvent(payload: any, sig: string) {
@@ -64,12 +96,12 @@ export class StripeService {
     return event;
   }
 
-  async createPaymentIntent() {
-    const intent = await this.stripe.paymentIntents.create({
-      amount: 10,
-      currency: 'eur',
-      automatic_payment_methods: { enabled: true },
-    });
-    return intent;
-  }
+  // async createPaymentIntent() {
+  //   const intent = await this.stripe.paymentIntents.create({
+  //     amount: 10,
+  //     currency: 'eur',
+  //     automatic_payment_methods: { enabled: true },
+  //   });
+  //   return intent;
+  // }
 }

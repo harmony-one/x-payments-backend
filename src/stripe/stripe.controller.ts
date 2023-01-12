@@ -15,6 +15,8 @@ import { StripeService } from './stripe.service';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
+import { PaymentStatus } from '../typeorm/payments.entity';
+import { UserService } from '../user/user.service';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -23,6 +25,7 @@ export class StripeController {
   constructor(
     private readonly stripeService: StripeService,
     private readonly web3Service: Web3Service,
+    private readonly userService: UserService,
   ) {}
 
   @Get('/checkout')
@@ -32,20 +35,20 @@ export class StripeController {
     @Query() stripeCheckoutDto: StripeCheckoutDto,
   ) {
     const session = await this.stripeService.createStripeSession(
-      stripeCheckoutDto,
+      stripeCheckoutDto.mode,
     );
     await this.stripeService.saveStripeSession(session);
     res.redirect(303, session.url);
   }
 
-  @Post('/create-payment-intent')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentIntent(@Body() body) {
-    const paymentIntent = await this.stripeService.createPaymentIntent();
-    return {
-      clientSecret: paymentIntent.client_secret,
-    };
-  }
+  // @Post('/create-payment-intent')
+  // @UsePipes(new ValidationPipe({ transform: true }))
+  // async createPaymentIntent(@Body() body) {
+  //   const paymentIntent = await this.stripeService.createPaymentIntent();
+  //   return {
+  //     clientSecret: paymentIntent.client_secret,
+  //   };
+  // }
 
   @Post('/webhook')
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -64,11 +67,29 @@ export class StripeController {
     this.logger.log(`Received event id: ${body.id}, type: ${body.type}`);
 
     if (body.type === 'checkout.session.completed') {
-      this.logger.log(`Stripe request completed: ${body.id}`);
+      const sessionId = body.data.object.id;
+      this.logger.log(
+        `Stripe request completed: ${body.id}, sessionId: ${sessionId}`,
+      );
+      const payment = await this.stripeService.getPaymentBySessionId(sessionId);
+      if (payment) {
+        await this.stripeService.setPaymentStatus(
+          sessionId,
+          PaymentStatus.completed,
+        );
+        await this.userService.subscribe({
+          ownerAddress: payment.ownerAddress,
+          subscriberAddress: payment.subscriberAddress,
+        });
+      } else {
+        this.logger.error(
+          `Cannot find payment with sessionId = "${sessionId}"`,
+        );
+      }
     }
 
     // Test request to contract
-    const price = await this.web3Service.getPriceByName('all');
-    this.logger.log(`Test price: ${price}`);
+    // const price = await this.web3Service.getPriceByName('all');
+    // this.logger.log(`Test price: ${price}`);
   }
 }

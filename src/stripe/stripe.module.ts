@@ -5,10 +5,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Web3Module } from '../web3/web3.module';
 import { Web3Service } from '../web3/web3.service';
+import { UserService } from '../user/user.service';
 
 @Module({
   imports: [ConfigModule, TypeOrmModule.forRoot(), Web3Module],
   controllers: [StripeController],
-  providers: [StripeService, Web3Service],
+  providers: [StripeService, Web3Service, UserService],
 })
 export class StripeModule {}
