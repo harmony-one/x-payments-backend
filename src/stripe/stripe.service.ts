@@ -5,6 +5,7 @@ import { StripeMode } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
 import { Payments, StripeCheckoutSession } from '../typeorm';
 import { PaymentStatus } from '../typeorm/payments.entity';
+import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 
 @Injectable()
 export class StripeService {
@@ -96,12 +97,13 @@ export class StripeService {
     return event;
   }
 
-  // async createPaymentIntent() {
-  //   const intent = await this.stripe.paymentIntents.create({
-  //     amount: 10,
-  //     currency: 'eur',
-  //     automatic_payment_methods: { enabled: true },
-  //   });
-  //   return intent;
-  // }
+  async createPaymentIntent(dto: CreatePaymentIntentDto) {
+    const { currency, paymentMethodType } = dto;
+    const intent = await this.stripe.paymentIntents.create({
+      amount: 100,
+      currency,
+      automatic_payment_methods: { enabled: true },
+    });
+    return intent;
+  }
 }

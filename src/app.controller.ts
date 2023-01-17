@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+
 @ApiTags('app')
 @Controller()
 export class AppController {
@@ -13,5 +14,12 @@ export class AppController {
   @Get('/status')
   getStatus() {
     return 'OK';
+  }
+
+  @Get('/config')
+  getConfig() {
+    return {
+      publishableKey: this.configService.get('stripe.publishableKey'),
+    };
   }
 }

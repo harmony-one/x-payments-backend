@@ -17,6 +17,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
 import { PaymentStatus } from '../typeorm/payments.entity';
 import { UserService } from '../user/user.service';
+import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -41,14 +42,14 @@ export class StripeController {
     res.redirect(303, session.url);
   }
 
-  // @Post('/create-payment-intent')
-  // @UsePipes(new ValidationPipe({ transform: true }))
-  // async createPaymentIntent(@Body() body) {
-  //   const paymentIntent = await this.stripeService.createPaymentIntent();
-  //   return {
-  //     clientSecret: paymentIntent.client_secret,
-  //   };
-  // }
+  @Post('/create-payment-intent')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {
+    const paymentIntent = await this.stripeService.createPaymentIntent(dto);
+    return {
+      clientSecret: paymentIntent.client_secret,
+    };
+  }
 
   @Post('/webhook')
   @UsePipes(new ValidationPipe({ transform: true }))

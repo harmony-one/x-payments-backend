@@ -5,10 +5,11 @@ export default () => ({
     url: process.env.CLIENT_URL || '',
   },
   stripe: {
-    priceId: process.env.STRIPE_PRICE_ID || '',
-    subscriptionPriceId: process.env.STRIPE_SUBSCRIPTION_PRICE_ID || '',
+    publishableKey: process.env.STRIPE_PUB_KEY || '',
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     endpointSecret: process.env.STRIPE_ENDPOINT_SECRET || '',
+    priceId: process.env.STRIPE_PRICE_ID || '',
+    subscriptionPriceId: process.env.STRIPE_SUBSCRIPTION_PRICE_ID || '',
     apiVersion: process.env.STRIPE_API_VERSION || '2022-11-15',
   },
   web3: {
