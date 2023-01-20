@@ -36,7 +36,7 @@ export class StripeController {
     @Query() stripeCheckoutDto: StripeCheckoutDto,
   ) {
     const session = await this.stripeService.createStripeSession(
-      stripeCheckoutDto.mode,
+      stripeCheckoutDto,
     );
     await this.stripeService.saveStripeSession(session);
     res.redirect(303, session.url);

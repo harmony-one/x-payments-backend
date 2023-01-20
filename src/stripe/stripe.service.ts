@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { StripeMode } from './dto/checkout.dto';
+import { StripeCheckoutDto, StripeMode } from "./dto/checkout.dto";
 import { DataSource } from 'typeorm';
 import { Payments, StripeCheckoutSession } from '../typeorm';
 import { PaymentStatus } from '../typeorm/payments.entity';
@@ -18,7 +18,10 @@ export class StripeService {
     const apiVersion = configService.get('stripe.apiVersion');
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
-  async createStripeSession(mode = StripeMode.payment) {
+  async createStripeSession(dto: StripeCheckoutDto) {
+    const { mode, successUrl, cancelUrl } = dto;
+    console.log('successUrl', successUrl)
+
     const clientUrl = this.configService.get('client.url');
     const priceId = this.configService.get('stripe.priceId');
     const subscriptionPriceId = this.configService.get(
@@ -34,8 +37,8 @@ export class StripeService {
         },
       ],
       mode,
-      success_url: `${clientUrl}/success`,
-      cancel_url: `${clientUrl}/canceled`,
+      success_url: successUrl || `${clientUrl}/success`,
+      cancel_url: cancelUrl || `${clientUrl}/canceled`,
     });
     return session;
   }

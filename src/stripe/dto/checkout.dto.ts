@@ -11,4 +11,14 @@ export class StripeCheckoutDto {
   @IsString()
   @IsOptional()
   mode = StripeMode.payment;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  successUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  cancelUrl?: string;
 }
