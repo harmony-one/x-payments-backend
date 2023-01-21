@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { StripeCheckoutDto, StripeMode } from "./dto/checkout.dto";
+import { StripeCheckoutDto } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
 import { Payments, StripeCheckoutSession } from '../typeorm';
 import { PaymentStatus } from '../typeorm/payments.entity';
@@ -20,7 +20,6 @@ export class StripeService {
   }
   async createStripeSession(dto: StripeCheckoutDto) {
     const { mode, successUrl, cancelUrl } = dto;
-    console.log('successUrl', successUrl)
 
     const clientUrl = this.configService.get('client.url');
     const priceId = this.configService.get('stripe.priceId');
