@@ -6,20 +6,69 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity()
-export class Subscriptions {
+export enum SubscriptionStatus {
+  waitingForPayment = 'waiting_for_payment',
+  paid = 'paid',
+  rented = 'rented',
+  completed = 'completed',
+}
+
+@Entity({ name: 'subscriptions' })
+export class Subscription {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
     type: 'varchar',
   })
-  ownerAddress: string;
+  sessionId: string;
+
+  @Column({
+    type: 'varchar',
+    enum: SubscriptionStatus,
+    default: SubscriptionStatus.waitingForPayment,
+  })
+  status: SubscriptionStatus;
 
   @Column({
     type: 'varchar',
   })
-  subscriberAddress: string;
+  domain: string;
+
+  @Column({
+    type: 'varchar',
+  })
+  userAddress: string;
+
+  @Column({
+    type: 'varchar',
+  })
+  url: string;
+
+  @Column({
+    type: 'varchar',
+  })
+  telegram: string;
+
+  @Column({
+    type: 'varchar',
+  })
+  email: string;
+
+  @Column({
+    type: 'varchar',
+  })
+  phone: string;
+
+  @Column({
+    type: 'integer',
+  })
+  amountOne: number;
+
+  @Column({
+    type: 'integer',
+  })
+  amountUsd: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

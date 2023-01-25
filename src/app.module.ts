@@ -12,6 +12,8 @@ import { Web3Service } from './web3/web3.service';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
 import { UserController } from './user/user.controller';
+import { Web3Controller } from './web3/web3.controller';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -35,8 +37,14 @@ import { UserController } from './user/user.controller';
     }),
     Web3Module,
     UserModule,
+    HttpModule
   ],
-  controllers: [AppController, StripeController, UserController],
+  controllers: [
+    AppController,
+    StripeController,
+    UserController,
+    Web3Controller,
+  ],
   providers: [AppService, StripeService, Web3Service, UserService],
 })
 export class AppModule {}

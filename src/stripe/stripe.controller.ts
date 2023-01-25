@@ -15,9 +15,10 @@ import { StripeService } from './stripe.service';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
-import { PaymentStatus } from '../typeorm/payments.entity';
 import { UserService } from '../user/user.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { CheckoutOneCountryDto } from './dto/checkout.onecountry.dto';
+import { SubscriptionStatus } from '../typeorm/subscription.entity';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -38,8 +39,15 @@ export class StripeController {
     const session = await this.stripeService.createStripeSession(
       stripeCheckoutDto,
     );
-    await this.stripeService.saveStripeSession(session);
     res.redirect(303, session.url);
+  }
+
+  @Post('/checkout-one-country')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async checkoutOneCountry(@Body() dto: CheckoutOneCountryDto) {
+    const session = await this.stripeService.createStripeSessionOneCountry(dto);
+    await this.stripeService.createSubscription(dto, session.id);
+    return session.url;
   }
 
   @Post('/create-payment-intent')
@@ -65,26 +73,50 @@ export class StripeController {
     // } else {
     //   console.log('verified!');
     // }
-    this.logger.log(`Received event id: ${body.id}, type: ${body.type}`);
+    this.logger.log(
+      `Received Stripe webhook event id: ${body.id}, type: ${body.type}`,
+    );
 
     if (body.type === 'checkout.session.completed') {
       const sessionId = body.data.object.id;
       this.logger.log(
         `Stripe request completed: ${body.id}, sessionId: ${sessionId}`,
       );
-      const payment = await this.stripeService.getPaymentBySessionId(sessionId);
-      if (payment) {
-        await this.stripeService.setPaymentStatus(
+      const subscription = await this.stripeService.getSubscriptionBySessionId(
+        sessionId,
+      );
+      if (subscription) {
+        const { domain, url, amountOne, telegram, email, phone } = subscription;
+        await this.stripeService.setSubscriptionStatus(
           sessionId,
-          PaymentStatus.completed,
+          SubscriptionStatus.paid,
         );
-        await this.userService.subscribe({
-          ownerAddress: payment.ownerAddress,
-          subscriberAddress: payment.subscriberAddress,
-        });
+        const currentOnePrice = await this.web3Service.getDomainPriceByName(
+          subscription.domain,
+        );
+        this.logger.log(
+          `Domain ${domain} current price: ${currentOnePrice}, expected price: ${amountOne}`,
+        );
+        const rentTx = await this.web3Service.rent(
+          domain,
+          url,
+          currentOnePrice,
+          telegram,
+          email,
+          phone,
+        );
+
+        this.logger.log(
+          `Domain ${domain} rented by BE, tx id: ${rentTx.transactionHash}`,
+        );
+
+        await this.stripeService.setSubscriptionStatus(
+          sessionId,
+          SubscriptionStatus.rented,
+        );
       } else {
         this.logger.error(
-          `Cannot find payment with sessionId = "${sessionId}"`,
+          `Cannot find subscription with sessionId = "${sessionId}"`,
         );
       }
     }

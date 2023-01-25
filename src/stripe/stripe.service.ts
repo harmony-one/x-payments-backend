@@ -3,9 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
-import { Payments, StripeCheckoutSession } from '../typeorm';
+import { Payments, Subscription } from "../typeorm";
 import { PaymentStatus } from '../typeorm/payments.entity';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { CheckoutOneCountryDto } from './dto/checkout.onecountry.dto';
+import { SubscriptionStatus } from "../typeorm/subscription.entity";
 
 @Injectable()
 export class StripeService {
@@ -41,29 +43,69 @@ export class StripeService {
     });
     return session;
   }
-  async saveStripeSession(session: Stripe.Checkout.Session) {
-    const result = await this.dataSource.manager.insert(StripeCheckoutSession, {
-      sessionId: session.id,
-      createdAt: session.created,
-      currency: session.currency,
+
+  async createStripeSessionOneCountry(dto: CheckoutOneCountryDto) {
+    const {
+      amountUsd,
+      amountOne,
+      domain,
+      url,
+      userAddress,
+      successUrl,
+      cancelUrl,
+    } = dto;
+
+    const session = await this.stripe.checkout.sessions.create({
+      line_items: [
+        {
+          // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+          // price: mode === 'payment' ? priceId : subscriptionPriceId,
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: amountUsd || 100, // amount in cents
+            product_data: {
+              name: 'One subscription',
+              description: 'Get access to ONE domains',
+              // images: ['https://example.com/t-shirt.png'],
+            },
+          },
+        },
+      ],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
-    return result;
+    return session;
   }
 
-  async createPayment(
-    sessionId: string,
-    ownerAddress: string,
-    subscriberAddress: string,
-  ) {
-    await this.dataSource.manager.insert(Payments, {
+  async createSubscription(dto: CheckoutOneCountryDto, sessionId: string) {
+    const {
+      domain,
+      url,
+      userAddress,
+      telegram,
+      email,
+      phone,
+      amountOne,
+      amountUsd,
+    } = dto;
+
+    await this.dataSource.manager.insert(Subscription, {
       sessionId,
-      ownerAddress,
-      subscriberAddress,
+      domain,
+      userAddress,
+      url,
+      telegram,
+      email,
+      phone,
+      amountOne,
+      amountUsd,
     });
   }
 
-  async getPaymentBySessionId(sessionId: string) {
-    const row = await this.dataSource.manager.findOne(Payments, {
+  async getSubscriptionBySessionId(sessionId: string) {
+    const row = await this.dataSource.manager.findOne(Subscription, {
       where: {
         sessionId,
       },
@@ -71,9 +113,9 @@ export class StripeService {
     return row;
   }
 
-  async setPaymentStatus(sessionId: string, status: PaymentStatus) {
+  async setSubscriptionStatus(sessionId: string, status: SubscriptionStatus) {
     await this.dataSource.manager.update(
-      Payments,
+      Subscription,
       {
         sessionId,
       },

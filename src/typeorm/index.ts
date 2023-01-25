@@ -1,8 +1,7 @@
-import { StripeCheckoutSession } from './stripe.request.entity';
-import { Subscriptions } from './subscription.entity';
+import { Subscription } from './subscription.entity';
 import { Payments } from './payments.entity';
 
-const entities = [StripeCheckoutSession, Subscriptions, Payments];
+const entities = [Subscription, Payments];
 
-export { StripeCheckoutSession, Subscriptions, Payments };
+export { Subscription, Payments };
 export default entities;
