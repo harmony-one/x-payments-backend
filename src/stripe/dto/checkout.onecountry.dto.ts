@@ -1,5 +1,5 @@
 import { IsString } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CheckoutOneCountryDto {
@@ -13,7 +13,7 @@ export class CheckoutOneCountryDto {
 
   @ApiProperty()
   @IsString()
-  domain: string;
+  name: string;
 
   @ApiProperty()
   @IsString()

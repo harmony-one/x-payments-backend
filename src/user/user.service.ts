@@ -1,26 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { Subscription } from '../typeorm';
-import { UserSubscribeDto } from './dto/user.subscribe.dto';
+import { OneCountrySubscription } from '../typeorm';
 
 @Injectable()
 export class UserService {
   constructor(private dataSource: DataSource) {}
-  async isUserSubscribed(domain: string, userAddress: string) {
-    const subscriberRow = await this.dataSource.manager.findOne(Subscription, {
-      where: {
-        domain,
-        userAddress,
+  async isUserSubscribed(name: string, userAddress: string) {
+    const subscriberRow = await this.dataSource.manager.findOne(
+      OneCountrySubscription,
+      {
+        where: {
+          name,
+          userAddress,
+        },
       },
-    });
+    );
     return !!subscriberRow;
   }
-
-  // async subscribe(dto: UserSubscribeDto) {
-  //   const { ownerAddress, subscriberAddress } = dto;
-  //   await this.dataSource.manager.insert(Subscriptions, {
-  //     ownerAddress,
-  //     subscriberAddress,
-  //   });
-  // }
 }

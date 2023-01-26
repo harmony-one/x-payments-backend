@@ -59,4 +59,10 @@ export class Web3Service {
     );
     return tx;
   }
+
+  async transferToken(to: string, name: string) {
+    const from = this.oneCountry.accountAddress;
+    const tx = await this.oneCountry.safeTransferFrom(from, to, name);
+    return tx;
+  }
 }

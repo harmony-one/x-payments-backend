@@ -3,11 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
-import { Payments, Subscription } from "../typeorm";
-import { PaymentStatus } from '../typeorm/payments.entity';
+import { OneCountrySubscription } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { CheckoutOneCountryDto } from './dto/checkout.onecountry.dto';
-import { SubscriptionStatus } from "../typeorm/subscription.entity";
+import { SubscriptionStatus } from '../typeorm/subscription.entity';
 
 @Injectable()
 export class StripeService {
@@ -45,15 +44,7 @@ export class StripeService {
   }
 
   async createStripeSessionOneCountry(dto: CheckoutOneCountryDto) {
-    const {
-      amountUsd,
-      amountOne,
-      domain,
-      url,
-      userAddress,
-      successUrl,
-      cancelUrl,
-    } = dto;
+    const { amountUsd, successUrl, cancelUrl } = dto;
 
     const session = await this.stripe.checkout.sessions.create({
       line_items: [
@@ -81,7 +72,7 @@ export class StripeService {
 
   async createSubscription(dto: CheckoutOneCountryDto, sessionId: string) {
     const {
-      domain,
+      name,
       url,
       userAddress,
       telegram,
@@ -91,9 +82,9 @@ export class StripeService {
       amountUsd,
     } = dto;
 
-    await this.dataSource.manager.insert(Subscription, {
+    await this.dataSource.manager.insert(OneCountrySubscription, {
       sessionId,
-      domain,
+      name,
       userAddress,
       url,
       telegram,
@@ -105,7 +96,7 @@ export class StripeService {
   }
 
   async getSubscriptionBySessionId(sessionId: string) {
-    const row = await this.dataSource.manager.findOne(Subscription, {
+    const row = await this.dataSource.manager.findOne(OneCountrySubscription, {
       where: {
         sessionId,
       },
@@ -115,7 +106,7 @@ export class StripeService {
 
   async setSubscriptionStatus(sessionId: string, status: SubscriptionStatus) {
     await this.dataSource.manager.update(
-      Subscription,
+      OneCountrySubscription,
       {
         sessionId,
       },
@@ -142,7 +133,7 @@ export class StripeService {
   }
 
   async createPaymentIntent(dto: CreatePaymentIntentDto) {
-    const { currency, paymentMethodType } = dto;
+    const { currency } = dto;
     const intent = await this.stripe.paymentIntents.create({
       amount: 100,
       currency,

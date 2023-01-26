@@ -1,7 +1,7 @@
-import { Subscription } from './subscription.entity';
+import { OneCountrySubscription } from './subscription.entity';
 import { Payments } from './payments.entity';
 
-const entities = [Subscription, Payments];
+const entities = [OneCountrySubscription, Payments];
 
-export { Subscription, Payments };
+export { OneCountrySubscription, Payments };
 export default entities;

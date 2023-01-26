@@ -86,19 +86,19 @@ export class StripeController {
         sessionId,
       );
       if (subscription) {
-        const { domain, url, amountOne, telegram, email, phone } = subscription;
+        const { name, url, amountOne, telegram, email, phone, userAddress } = subscription;
         await this.stripeService.setSubscriptionStatus(
           sessionId,
           SubscriptionStatus.paid,
         );
         const currentOnePrice = await this.web3Service.getDomainPriceByName(
-          subscription.domain,
+          subscription.name,
         );
         this.logger.log(
-          `Domain ${domain} current price: ${currentOnePrice}, expected price: ${amountOne}`,
+          `Domain ${name} current price: ${currentOnePrice}, expected price: ${amountOne}`,
         );
         const rentTx = await this.web3Service.rent(
-          domain,
+          name,
           url,
           currentOnePrice,
           telegram,
@@ -107,12 +107,28 @@ export class StripeController {
         );
 
         this.logger.log(
-          `Domain ${domain} rented by BE, tx id: ${rentTx.transactionHash}`,
+          `Domain ${name} rented by BE, tx id: ${rentTx.transactionHash}`,
         );
 
         await this.stripeService.setSubscriptionStatus(
           sessionId,
           SubscriptionStatus.rented,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const transferTx = await this.web3Service.transferToken(
+          userAddress,
+          name,
+        );
+
+        this.logger.log(
+          `Domain ${name} transferred from BE to user address ${userAddress}, tx id: ${transferTx.transactionHash}`,
+        );
+
+        await this.stripeService.setSubscriptionStatus(
+          sessionId,
+          SubscriptionStatus.completed,
         );
       } else {
         this.logger.error(
@@ -120,9 +136,5 @@ export class StripeController {
         );
       }
     }
-
-    // Test request to contract
-    // const price = await this.web3Service.getPriceByName('all');
-    // this.logger.log(`Test price: ${price}`);
   }
 }

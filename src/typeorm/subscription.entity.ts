@@ -13,8 +13,8 @@ export enum SubscriptionStatus {
   completed = 'completed',
 }
 
-@Entity({ name: 'subscriptions' })
-export class Subscription {
+@Entity({ name: 'one_country_subscriptions' })
+export class OneCountrySubscription {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -33,7 +33,7 @@ export class Subscription {
   @Column({
     type: 'varchar',
   })
-  domain: string;
+  name: string;
 
   @Column({
     type: 'varchar',
