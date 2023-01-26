@@ -86,7 +86,8 @@ export class StripeController {
         sessionId,
       );
       if (subscription) {
-        const { name, url, amountOne, telegram, email, phone, userAddress } = subscription;
+        const { name, url, amountOne, telegram, email, phone, userAddress } =
+          subscription;
         await this.stripeService.setSubscriptionStatus(
           sessionId,
           SubscriptionStatus.paid,
@@ -115,7 +116,7 @@ export class StripeController {
           SubscriptionStatus.rented,
         );
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 4000));
 
         const transferTx = await this.web3Service.transferToken(
           userAddress,
