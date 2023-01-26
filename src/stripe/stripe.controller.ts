@@ -15,10 +15,10 @@ import { StripeService } from './stripe.service';
 import { StripeCheckoutDto } from './dto/checkout.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
-import { UserService } from '../user/user.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { CheckoutOneCountryDto } from './dto/checkout.onecountry.dto';
 import { SubscriptionStatus } from '../typeorm/subscription.entity';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -27,7 +27,7 @@ export class StripeController {
   constructor(
     private readonly stripeService: StripeService,
     private readonly web3Service: Web3Service,
-    private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('/checkout')
@@ -116,7 +116,10 @@ export class StripeController {
           SubscriptionStatus.rented,
         );
 
-        await new Promise((resolve) => setTimeout(resolve, 4000));
+        // Wait until transaction will be confirmed
+        await new Promise((resolve) =>
+          setTimeout(resolve, this.configService.get('web3.txConfirmTimeout')),
+        );
 
         const transferTx = await this.web3Service.transferToken(
           userAddress,
