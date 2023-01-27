@@ -22,7 +22,6 @@ import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
-  PaymentStatus,
   StripeProduct,
   StripeProductOpType,
 } from '../typeorm/stripe.payment.entity';
@@ -80,71 +79,7 @@ export class StripeController {
       this.logger.log(
         `Stripe request completed, id: ${body.id}, sessionId: ${sessionId}`,
       );
-      const payment = await this.stripeService.getPaymentBySessionId(sessionId);
-
-      if (payment) {
-        if (payment.status !== PaymentStatus.waitingForPayment) {
-          this.logger.warn(
-            `Payment ${sessionId} has status ${payment.status}, expected status: ${PaymentStatus.waitingForPayment}, exit`,
-          );
-          return;
-        }
-
-        const { userAddress, amount, status, params } = payment;
-
-        if (payment.product === StripeProduct.oneCountry) {
-          const { name, url, telegram, email, phone } = params;
-
-          await this.stripeService.setPaymentStatus(
-            sessionId,
-            PaymentStatus.paid,
-          );
-          const domainPrice = await this.web3Service.getDomainPriceByName(name);
-          this.logger.log(`Domain ${name} current price: ${domainPrice}`);
-          const rentTx = await this.web3Service.rent(
-            name,
-            url,
-            domainPrice,
-            telegram,
-            email,
-            phone,
-          );
-
-          this.logger.log(
-            `Domain ${name} rented by BE, tx id: ${rentTx.transactionHash}`,
-          );
-
-          await this.stripeService.setPaymentStatus(
-            sessionId,
-            PaymentStatus.rented,
-          );
-
-          // Wait until transaction will be confirmed
-          await new Promise((resolve) =>
-            setTimeout(
-              resolve,
-              this.configService.get('web3.txConfirmTimeout'),
-            ),
-          );
-
-          const transferTx = await this.web3Service.transferToken(
-            userAddress,
-            name,
-          );
-
-          this.logger.log(
-            `Domain ${name} transferred from BE to user address ${userAddress}, tx id: ${transferTx.transactionHash}`,
-          );
-
-          await this.stripeService.setPaymentStatus(
-            sessionId,
-            PaymentStatus.completed,
-          );
-        } else if (payment.product === StripeProduct.shortReelsVideos) {
-        }
-      } else {
-        this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
-      }
+      this.stripeService.onCheckoutPaymentSuccess(sessionId);
     }
   }
 
