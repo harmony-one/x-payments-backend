@@ -171,11 +171,16 @@ export class StripeService {
   }
 
   async onPaymentVideoPay(payment: StripePaymentEntity) {
-    const { params } = payment;
-    const tx = await this.web3Service.payForVideoVanityURLAccess(params);
-    this.logger.log(
-      `Call payForVideoVanityURLAccess success, tx hash: ${tx.transactionHash}`,
-    );
+    const { sessionId, params } = payment;
+    try {
+      const tx = await this.web3Service.payForVideoVanityURLAccess(params);
+      await this.setPaymentStatus(sessionId, PaymentStatus.completed);
+      this.logger.log(
+        `Call payForVideoVanityURLAccess success, tx hash: ${tx.transactionHash}`,
+      );
+    } catch (e) {
+      this.logger.error(`Cannot call payForVideoVanityURLAccess: ${e.message}`);
+    }
   }
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {
