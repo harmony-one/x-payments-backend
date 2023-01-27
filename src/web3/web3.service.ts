@@ -5,6 +5,9 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3 = require('web3');
+import { AbiItem } from 'web3-utils';
+import * as ShortReelsVideoAbi from './abi/short-reels-video.abi.json';
+import { VideoContractParams } from '../stripe/dto/checkout.dto';
 
 @Injectable()
 export class Web3Service {
@@ -63,6 +66,37 @@ export class Web3Service {
   async transferToken(to: string, name: string) {
     const from = this.oneCountry.accountAddress;
     const tx = await this.oneCountry.safeTransferFrom(from, to, name);
+    return tx;
+  }
+
+  async payForVideoVanityURLAccess(dto: VideoContractParams) {
+    const { user, name, aliasName, paidAt } = dto;
+    const web3 = new Web3(this.configService.get('web3.rpcUrl'));
+    const contractAddress = this.configService.get(
+      'web3.videoReelsContractAddress',
+    );
+    const maintainerPK = this.configService.get('web3.videoReelsPrivateKey');
+    if (!maintainerPK) {
+      throw new Error(
+        'You need to setup env VIDEO_REELS_PRIVATE_KEY to sign video-reels contract transactions',
+      );
+    }
+    const account = web3.eth.accounts.privateKeyToAccount(maintainerPK);
+    web3.eth.accounts.wallet.add(account);
+
+    const contract = new web3.eth.Contract(
+      ShortReelsVideoAbi as AbiItem[],
+      contractAddress,
+    );
+
+    const callObj = { from: account.address };
+    const gasPrice = await web3.eth.getGasPrice();
+    const gasEstimate = await contract.methods
+      .payForVideoVanityURLAccess(user, name, aliasName, paidAt)
+      .estimateGas(callObj);
+    const tx = await contract.methods
+      .payForVideoVanityURLAccess(user, name, aliasName, paidAt)
+      .send({ ...callObj, gasPrice: gasPrice, gas: gasEstimate });
     return tx;
   }
 }

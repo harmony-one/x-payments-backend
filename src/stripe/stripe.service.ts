@@ -171,7 +171,11 @@ export class StripeService {
   }
 
   async onPaymentVideoPay(payment: StripePaymentEntity) {
-    const { sessionId, userAddress, amount, status, params } = payment;
+    const { params } = payment;
+    const tx = await this.web3Service.payForVideoVanityURLAccess(params);
+    this.logger.log(
+      `Call payForVideoVanityURLAccess success, tx hash: ${tx.transactionHash}`,
+    );
   }
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {

@@ -67,7 +67,7 @@ export class CheckoutOneCountryRentDto {
   cancelUrl: string;
 }
 
-class VideoContractParams {
+export class VideoContractParams {
   @ApiProperty()
   @IsString()
   user: string;
