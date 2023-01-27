@@ -1,7 +1,6 @@
-import { OneCountrySubscription } from './subscription.entity';
-import { Payments } from './payments.entity';
+import { StripePaymentEntity } from './stripe.payment.entity';
 
-const entities = [OneCountrySubscription, Payments];
+const entities = [StripePaymentEntity];
 
-export { OneCountrySubscription, Payments };
+export { StripePaymentEntity };
 export default entities;

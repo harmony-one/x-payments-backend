@@ -2,23 +2,31 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
+  Logger,
   Post,
   Query,
   Res,
   UsePipes,
   ValidationPipe,
-  Headers,
-  Req,
-  Logger,
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import { StripeCheckoutDto } from './dto/checkout.dto';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  CheckoutOneCountryRentDto,
+  CheckoutVideoPayDto,
+  CreateCheckoutSessionDto,
+  StripeCheckoutDto,
+} from './dto/checkout.dto';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import { CheckoutOneCountryDto } from './dto/checkout.onecountry.dto';
-import { SubscriptionStatus } from '../typeorm/subscription.entity';
 import { ConfigService } from '@nestjs/config';
+import {
+  PaymentStatus,
+  StripeProduct,
+  StripeProductOpType,
+} from '../typeorm/stripe.payment.entity';
+import { CreatePaymentDto } from './dto/payment.dto';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -30,6 +38,7 @@ export class StripeController {
     private readonly configService: ConfigService,
   ) {}
 
+  @ApiOperation({ deprecated: true })
   @Get('/checkout')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createCheckoutSession(
@@ -42,14 +51,7 @@ export class StripeController {
     res.redirect(303, session.url);
   }
 
-  @Post('/checkout-one-country')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutOneCountry(@Body() dto: CheckoutOneCountryDto) {
-    const session = await this.stripeService.createStripeSessionOneCountry(dto);
-    await this.stripeService.createSubscription(dto, session.id);
-    return session.url;
-  }
-
+  @ApiOperation({ deprecated: true })
   @Post('/create-payment-intent')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {
@@ -61,18 +63,14 @@ export class StripeController {
 
   @Post('/webhook')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async stripeWebHook(
-    @Headers('stripe-signature') sig,
-    @Body() body,
-    @Res() res,
-    @Req() req,
-  ) {
+  async stripeWebHook(@Headers('stripe-signature') sig, @Body() body) {
     // const event = this.stripeService.verifyEvent(req.body, sig);
     // if (!event) {
-    //   console.log('error!');
+    //   console.log('error');
     // } else {
-    //   console.log('verified!');
+    //   console.log('verified');
     // }
+
     this.logger.log(
       `Received Stripe webhook event id: ${body.id}, type: ${body.type}`,
     );
@@ -80,65 +78,132 @@ export class StripeController {
     if (body.type === 'checkout.session.completed') {
       const sessionId = body.data.object.id;
       this.logger.log(
-        `Stripe request completed: ${body.id}, sessionId: ${sessionId}`,
+        `Stripe request completed, id: ${body.id}, sessionId: ${sessionId}`,
       );
-      const subscription = await this.stripeService.getSubscriptionBySessionId(
-        sessionId,
-      );
-      if (subscription) {
-        const { name, url, amountOne, telegram, email, phone, userAddress } =
-          subscription;
-        await this.stripeService.setSubscriptionStatus(
-          sessionId,
-          SubscriptionStatus.paid,
-        );
-        const currentOnePrice = await this.web3Service.getDomainPriceByName(
-          subscription.name,
-        );
-        this.logger.log(
-          `Domain ${name} current price: ${currentOnePrice}, expected price: ${amountOne}`,
-        );
-        const rentTx = await this.web3Service.rent(
-          name,
-          url,
-          currentOnePrice,
-          telegram,
-          email,
-          phone,
-        );
+      const payment = await this.stripeService.getPaymentBySessionId(sessionId);
 
-        this.logger.log(
-          `Domain ${name} rented by BE, tx id: ${rentTx.transactionHash}`,
-        );
+      if (payment) {
+        if (payment.status !== PaymentStatus.waitingForPayment) {
+          this.logger.warn(
+            `Payment ${sessionId} has status ${payment.status}, expected status: ${PaymentStatus.waitingForPayment}, exit`,
+          );
+          return;
+        }
 
-        await this.stripeService.setSubscriptionStatus(
-          sessionId,
-          SubscriptionStatus.rented,
-        );
+        const { userAddress, amount, status, params } = payment;
 
-        // Wait until transaction will be confirmed
-        await new Promise((resolve) =>
-          setTimeout(resolve, this.configService.get('web3.txConfirmTimeout')),
-        );
+        if (payment.product === StripeProduct.oneCountry) {
+          const { name, url, telegram, email, phone } = params;
 
-        const transferTx = await this.web3Service.transferToken(
-          userAddress,
-          name,
-        );
+          await this.stripeService.setPaymentStatus(
+            sessionId,
+            PaymentStatus.paid,
+          );
+          const domainPrice = await this.web3Service.getDomainPriceByName(name);
+          this.logger.log(`Domain ${name} current price: ${domainPrice}`);
+          const rentTx = await this.web3Service.rent(
+            name,
+            url,
+            domainPrice,
+            telegram,
+            email,
+            phone,
+          );
 
-        this.logger.log(
-          `Domain ${name} transferred from BE to user address ${userAddress}, tx id: ${transferTx.transactionHash}`,
-        );
+          this.logger.log(
+            `Domain ${name} rented by BE, tx id: ${rentTx.transactionHash}`,
+          );
 
-        await this.stripeService.setSubscriptionStatus(
-          sessionId,
-          SubscriptionStatus.completed,
-        );
+          await this.stripeService.setPaymentStatus(
+            sessionId,
+            PaymentStatus.rented,
+          );
+
+          // Wait until transaction will be confirmed
+          await new Promise((resolve) =>
+            setTimeout(
+              resolve,
+              this.configService.get('web3.txConfirmTimeout'),
+            ),
+          );
+
+          const transferTx = await this.web3Service.transferToken(
+            userAddress,
+            name,
+          );
+
+          this.logger.log(
+            `Domain ${name} transferred from BE to user address ${userAddress}, tx id: ${transferTx.transactionHash}`,
+          );
+
+          await this.stripeService.setPaymentStatus(
+            sessionId,
+            PaymentStatus.completed,
+          );
+        } else if (payment.product === StripeProduct.shortReelsVideos) {
+        }
       } else {
-        this.logger.error(
-          `Cannot find subscription with sessionId = "${sessionId}"`,
-        );
+        this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
       }
     }
+  }
+
+  @Post('/checkout/one-country/rent')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
+    const checkoutDto: CreateCheckoutSessionDto = {
+      name: '1.country',
+      // description: `Rent ${dto.params.name} domain`,
+      amount: dto.amount,
+      successUrl: dto.successUrl,
+      cancelUrl: dto.successUrl,
+    };
+    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+
+    const paymentDto: CreatePaymentDto = {
+      product: StripeProduct.oneCountry,
+      opType: StripeProductOpType.rent,
+      sessionId: session.id,
+      userAddress: dto.userAddress,
+      amount: dto.amount,
+      params: dto.params,
+    };
+    await this.stripeService.createStripePayment(paymentDto);
+    this.logger.log(
+      `${StripeProduct.shortReelsVideos} - created new payment session: ${
+        session.id
+      }, dto: ${JSON.stringify(dto)}`,
+    );
+    return session.url;
+  }
+
+  @Post('/checkout/video/pay')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async checkoutVideoPay(@Body() dto: CheckoutVideoPayDto) {
+    const checkoutDto: CreateCheckoutSessionDto = {
+      name: 'Video pay',
+      amount: dto.amount,
+      successUrl: dto.successUrl,
+      cancelUrl: dto.successUrl,
+    };
+    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+
+    const paymentDto: CreatePaymentDto = {
+      product: StripeProduct.shortReelsVideos,
+      opType: StripeProductOpType.videoPay,
+      sessionId: session.id,
+      userAddress: '',
+      amount: dto.amount,
+      params: dto.params,
+    };
+
+    await this.stripeService.createStripePayment(paymentDto);
+
+    this.logger.log(
+      `${StripeProduct.shortReelsVideos} - created new payment session: ${
+        session.id
+      }, dto: ${JSON.stringify(dto)}`,
+    );
+    return session.url;
   }
 }
