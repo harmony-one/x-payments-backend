@@ -21,6 +21,7 @@ import {
   StripeCheckoutDto,
 } from './dto/checkout.dto';
 import {
+  ApiExcludeEndpoint,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -70,6 +71,7 @@ export class StripeController {
   }
 
   @Post('/webhook')
+  @ApiExcludeEndpoint()
   @UsePipes(new ValidationPipe({ transform: true }))
   async stripeWebHook(@Headers('stripe-signature') sig, @Body() body) {
     // const event = this.stripeService.verifyEvent(req.body, sig);
