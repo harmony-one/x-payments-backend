@@ -105,6 +105,7 @@ export class StripeService {
   }
 
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
+    this.logger.log(`SessionId ${sessionId} set payment status: ${status}`);
     await this.dataSource.manager.update(
       StripePaymentEntity,
       {
@@ -145,13 +146,23 @@ export class StripeService {
   async onCheckoutPaymentSuccess(sessionId: string) {
     const payment = await this.getPaymentBySessionId(sessionId);
 
-    if (payment) {
-      if (payment.status !== PaymentStatus.waitingForPayment) {
-        this.logger.error(
-          `Payment ${sessionId} has status ${payment.status}, expected status: ${PaymentStatus.waitingForPayment}, exit`,
-        );
-        return;
-      }
+    if (!payment) {
+      this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
+      return;
+    }
+
+    if (payment.status !== PaymentStatus.pending) {
+      this.logger.error(
+        `Payment ${sessionId} has status ${payment.status}, expected status: ${PaymentStatus.pending}, exit`,
+      );
+      return;
+    }
+
+    await this.setPaymentStatus(sessionId, PaymentStatus.processing);
+
+    this.logger.log(`Processing payment ${JSON.stringify(payment)}`);
+
+    try {
       switch (payment.product) {
         case StripeProduct.oneCountry: {
           await this.onPaymentOneCountryRent(payment);
@@ -162,35 +173,33 @@ export class StripeService {
           break;
         }
         default: {
-          this.logger.error(`Unknown product: ${payment.product}`);
+          this.logger.error(`Unknown product: ${payment.product}, return`);
+          return;
         }
       }
-    } else {
-      this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
+
+      await this.setPaymentStatus(sessionId, PaymentStatus.completed);
+    } catch (e) {
+      await this.setPaymentStatus(sessionId, PaymentStatus.processingFailed);
+      this.logger.error(`Cannot complete payment ${sessionId}: ${e.message}`);
     }
   }
 
   async onPaymentVideoPay(payment: StripePaymentEntity) {
-    const { sessionId, params } = payment;
-    try {
-      const tx = await this.web3Service.payForVideoVanityURLAccess(params);
-      await this.setPaymentStatus(sessionId, PaymentStatus.completed);
-      this.logger.log(
-        `Call payForVideoVanityURLAccess success, tx hash: ${tx.transactionHash}`,
-      );
-    } catch (e) {
-      this.logger.error(`Cannot call payForVideoVanityURLAccess: ${e.message}`);
-    }
+    const { params } = payment;
+    const tx = await this.web3Service.payForVideoVanityURLAccess(params);
+    this.logger.log(`Transaction hash: ${tx.transactionHash}`);
   }
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {
-    const { sessionId, userAddress, amount, status, params } = payment;
+    const { sessionId, userAddress, params } = payment;
 
     const { name, url, telegram, email, phone } = params;
 
-    await this.setPaymentStatus(sessionId, PaymentStatus.paid);
     const domainPrice = await this.web3Service.getDomainPriceByName(name);
+
     this.logger.log(`Domain ${name} current price: ${domainPrice}`);
+
     const rentTx = await this.web3Service.rent(
       name,
       url,
@@ -201,10 +210,8 @@ export class StripeService {
     );
 
     this.logger.log(
-      `Domain ${name} rented by BE, tx id: ${rentTx.transactionHash}`,
+      `Domain ${name} rented by BE, transaction hash: ${rentTx.transactionHash}`,
     );
-
-    await this.setPaymentStatus(sessionId, PaymentStatus.rented);
 
     // Wait until transaction will be confirmed
     await new Promise((resolve) =>
@@ -214,7 +221,7 @@ export class StripeService {
     const transferTx = await this.web3Service.transferToken(userAddress, name);
 
     this.logger.log(
-      `Domain ${name} transferred from BE to user address ${userAddress}, tx id: ${transferTx.transactionHash}`,
+      `Domain ${name} transferred from service to user address ${userAddress}, transaction hash: ${transferTx.transactionHash}`,
     );
 
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);

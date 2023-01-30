@@ -4,6 +4,8 @@ import {
   Get,
   Headers,
   Logger,
+  NotFoundException,
+  Param,
   Post,
   Query,
   Res,
@@ -13,15 +15,22 @@ import {
 import { StripeService } from './stripe.service';
 import {
   CheckoutOneCountryRentDto,
+  CheckoutCreateResponseDto,
   CheckoutVideoPayDto,
   CreateCheckoutSessionDto,
   StripeCheckoutDto,
 } from './dto/checkout.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
+  StripePaymentEntity,
   StripeProduct,
   StripeProductOpType,
 } from '../typeorm/stripe.payment.entity';
@@ -84,6 +93,10 @@ export class StripeController {
   }
 
   @Post('/checkout/one-country/rent')
+  @ApiOkResponse({
+    description: 'Stripe session params',
+    type: CheckoutCreateResponseDto,
+  })
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
     const checkoutDto: CreateCheckoutSessionDto = {
@@ -104,17 +117,28 @@ export class StripeController {
       params: dto.params,
     };
     await this.stripeService.createStripePayment(paymentDto);
+
     this.logger.log(
       `${StripeProduct.shortReelsVideos} - created new payment session: ${
         session.id
       }, dto: ${JSON.stringify(dto)}`,
     );
-    return session.url;
+
+    return {
+      sessionId: session.id,
+      paymentUrl: session.url,
+    };
   }
 
   @Post('/checkout/video/pay')
+  @ApiOkResponse({
+    description: 'Stripe session params',
+    type: CheckoutCreateResponseDto,
+  })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutVideoPay(@Body() dto: CheckoutVideoPayDto) {
+  async checkoutVideoPay(
+    @Body() dto: CheckoutVideoPayDto,
+  ): Promise<CheckoutCreateResponseDto> {
     const checkoutDto: CreateCheckoutSessionDto = {
       name: 'Video pay',
       amount: dto.amount,
@@ -139,6 +163,29 @@ export class StripeController {
         session.id
       }, dto: ${JSON.stringify(dto)}`,
     );
-    return session.url;
+
+    return {
+      sessionId: session.id,
+      paymentUrl: session.url,
+    };
+  }
+
+  @Get('/payment/:sessionId')
+  @ApiParam({
+    name: 'sessionId',
+    required: true,
+    description: 'Stripe sessionId obtained by calling /checkout/ method',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: StripePaymentEntity,
+  })
+  async getPayment(@Param() params) {
+    const { sessionId } = params;
+    const payment = await this.stripeService.getPaymentBySessionId(sessionId);
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+    return payment;
   }
 }

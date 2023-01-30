@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 export enum StripeMode {
   payment = 'payment',
@@ -119,4 +119,16 @@ export class CreateCheckoutSessionDto {
   successUrl: string;
 
   cancelUrl: string;
+}
+
+export class CheckoutCreateResponseDto {
+  @ApiProperty()
+  @IsString()
+  @Expose()
+  sessionId: string;
+
+  @ApiProperty()
+  @IsString()
+  @Expose()
+  paymentUrl: string;
 }
