@@ -9,9 +9,8 @@ import { StripeService } from './stripe/stripe.service';
 import { Web3Module } from './web3/web3.module';
 import entities from './typeorm';
 import { Web3Service } from './web3/web3.service';
-import { UserModule } from './user/user.module';
-import { UserService } from './user/user.service';
-import { UserController } from './user/user.controller';
+import { Web3Controller } from './web3/web3.controller';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -34,9 +33,9 @@ import { UserController } from './user/user.controller';
       inject: [ConfigService],
     }),
     Web3Module,
-    UserModule,
+    HttpModule,
   ],
-  controllers: [AppController, StripeController, UserController],
-  providers: [AppService, StripeService, Web3Service, UserService],
+  controllers: [AppController, StripeController, Web3Controller],
+  providers: [AppService, StripeService, Web3Service],
 })
 export class AppModule {}

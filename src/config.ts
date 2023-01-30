@@ -17,6 +17,12 @@ export default () => ({
     oneCountryContractAddress:
       process.env.ONE_COUNTRY_CONTRACT_ADDRESS ||
       '0xaef596d26be185d1c25c0aadfab6ab054e7c011f',
+    oneWalletPrivateKey: process.env.ONE_WALLET_PRIVATE_KEY || '',
+    txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT) || 4000,
+    videoReelsContractAddress:
+      process.env.VIDEO_REELS_CONTRACT_ADDRESS ||
+      '0x9c125e45d2d9e7152e7dabc4edd7e063bc27708a',
+    videoReelsPrivateKey: process.env.VIDEO_REELS_PRIVATE_KEY || '',
   },
   version: process.env.npm_package_version || '0.0.1',
   name: process.env.npm_package_name || '',

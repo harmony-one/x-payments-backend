@@ -1,17 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { StripeCheckoutDto } from './dto/checkout.dto';
+import {
+  CreateCheckoutSessionDto,
+  StripeCheckoutDto,
+} from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
-import { Payments, StripeCheckoutSession } from '../typeorm';
-import { PaymentStatus } from '../typeorm/payments.entity';
+import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { PaymentStatus, StripeProduct } from '../typeorm/stripe.payment.entity';
+import { CreatePaymentDto } from './dto/payment.dto';
+import { Web3Service } from '../web3/web3.service';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
+  private readonly logger = new Logger(StripeService.name);
   constructor(
     private configService: ConfigService,
+    private web3Service: Web3Service,
     private dataSource: DataSource,
   ) {
     const secretKey = configService.get('stripe.secretKey');
@@ -41,29 +48,55 @@ export class StripeService {
     });
     return session;
   }
-  async saveStripeSession(session: Stripe.Checkout.Session) {
-    const result = await this.dataSource.manager.insert(StripeCheckoutSession, {
-      sessionId: session.id,
-      createdAt: session.created,
-      currency: session.currency,
+
+  async createCheckoutSession(dto: CreateCheckoutSessionDto) {
+    const {
+      name,
+      description = '',
+      currency = 'usd',
+      amount,
+      quantity = 1,
+      successUrl,
+      cancelUrl,
+    } = dto;
+
+    const session = await this.stripe.checkout.sessions.create({
+      line_items: [
+        {
+          // price: mode === 'payment' ? priceId : subscriptionPriceId,
+          quantity,
+          price_data: {
+            currency,
+            unit_amount: amount, // amount in USD cents
+            product_data: {
+              name,
+              // description,
+              // images: ['https://example.com/t-shirt.png'],
+            },
+          },
+        },
+      ],
+      mode: 'payment',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
-    return result;
+
+    return session;
   }
 
-  async createPayment(
-    sessionId: string,
-    ownerAddress: string,
-    subscriberAddress: string,
-  ) {
-    await this.dataSource.manager.insert(Payments, {
-      sessionId,
-      ownerAddress,
-      subscriberAddress,
+  async createStripePayment(dto: CreatePaymentDto) {
+    await this.dataSource.manager.insert(StripePaymentEntity, {
+      product: dto.product,
+      opType: dto.opType,
+      sessionId: dto.sessionId,
+      userAddress: dto.userAddress || '',
+      amount: dto.amount,
+      params: dto.params,
     });
   }
 
   async getPaymentBySessionId(sessionId: string) {
-    const row = await this.dataSource.manager.findOne(Payments, {
+    const row = await this.dataSource.manager.findOne(StripePaymentEntity, {
       where: {
         sessionId,
       },
@@ -72,8 +105,9 @@ export class StripeService {
   }
 
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
+    this.logger.log(`SessionId ${sessionId} set payment status: ${status}`);
     await this.dataSource.manager.update(
-      Payments,
+      StripePaymentEntity,
       {
         sessionId,
       },
@@ -100,12 +134,96 @@ export class StripeService {
   }
 
   async createPaymentIntent(dto: CreatePaymentIntentDto) {
-    const { currency, paymentMethodType } = dto;
+    const { currency } = dto;
     const intent = await this.stripe.paymentIntents.create({
       amount: 100,
       currency,
       automatic_payment_methods: { enabled: true },
     });
     return intent;
+  }
+
+  async onCheckoutPaymentSuccess(sessionId: string) {
+    const payment = await this.getPaymentBySessionId(sessionId);
+
+    if (!payment) {
+      this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
+      return;
+    }
+
+    if (payment.status !== PaymentStatus.pending) {
+      this.logger.error(
+        `Payment ${sessionId} has status ${payment.status}, expected status: ${PaymentStatus.pending}, exit`,
+      );
+      return;
+    }
+
+    await this.setPaymentStatus(sessionId, PaymentStatus.processing);
+
+    this.logger.log(`Processing payment ${JSON.stringify(payment)}`);
+
+    try {
+      switch (payment.product) {
+        case StripeProduct.oneCountry: {
+          await this.onPaymentOneCountryRent(payment);
+          break;
+        }
+        case StripeProduct.shortReelsVideos: {
+          await this.onPaymentVideoPay(payment);
+          break;
+        }
+        default: {
+          this.logger.error(`Unknown product: ${payment.product}, return`);
+          return;
+        }
+      }
+
+      await this.setPaymentStatus(sessionId, PaymentStatus.completed);
+    } catch (e) {
+      await this.setPaymentStatus(sessionId, PaymentStatus.processingFailed);
+      this.logger.error(`Cannot complete payment ${sessionId}: ${e.message}`);
+    }
+  }
+
+  async onPaymentVideoPay(payment: StripePaymentEntity) {
+    const { params } = payment;
+    const tx = await this.web3Service.payForVideoVanityURLAccess(params);
+    this.logger.log(`Transaction hash: ${tx.transactionHash}`);
+  }
+
+  async onPaymentOneCountryRent(payment: StripePaymentEntity) {
+    const { sessionId, userAddress, params } = payment;
+
+    const { name, url, telegram, email, phone } = params;
+
+    const domainPrice = await this.web3Service.getDomainPriceByName(name);
+
+    this.logger.log(`Domain ${name} current price: ${domainPrice}`);
+
+    const rentTx = await this.web3Service.rent(
+      name,
+      url,
+      domainPrice,
+      telegram,
+      email,
+      phone,
+    );
+
+    this.logger.log(
+      `Domain ${name} rented by BE, transaction hash: ${rentTx.transactionHash}`,
+    );
+
+    // Wait until transaction will be confirmed
+    await new Promise((resolve) =>
+      setTimeout(resolve, this.configService.get('web3.txConfirmTimeout')),
+    );
+
+    const transferTx = await this.web3Service.transferToken(userAddress, name);
+
+    this.logger.log(
+      `Domain ${name} transferred from service to user address ${userAddress}, transaction hash: ${transferTx.transactionHash}`,
+    );
+
+    await this.setPaymentStatus(sessionId, PaymentStatus.completed);
   }
 }
