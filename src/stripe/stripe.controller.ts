@@ -23,7 +23,6 @@ import {
 import {
   ApiExcludeEndpoint,
   ApiOkResponse,
-  ApiOperation,
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
@@ -47,7 +46,7 @@ export class StripeController {
     private readonly configService: ConfigService,
   ) {}
 
-  @ApiOperation({ deprecated: true })
+  @ApiExcludeEndpoint()
   @Get('/checkout')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createCheckoutSession(
@@ -60,7 +59,7 @@ export class StripeController {
     res.redirect(303, session.url);
   }
 
-  @ApiOperation({ deprecated: true })
+  @ApiExcludeEndpoint()
   @Post('/create-payment-intent')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {

@@ -19,7 +19,23 @@ export class AppController {
   @Get('/config')
   getConfig() {
     return {
-      publishableKey: this.configService.get('stripe.publishableKey'),
+      client: {
+        url: this.configService.get('client.url'),
+      },
+      stripe: {
+        publishableKey: this.configService.get('stripe.publishableKey'),
+        apiVersion: this.configService.get('stripe.apiVersion'),
+      },
+      web3: {
+        rpcUrl: this.configService.get('web3.rpcUrl'),
+        oneCountryContractAddress: this.configService.get(
+          'web3.oneCountryContractAddress',
+        ),
+        txConfirmTimeout: this.configService.get('web3.txConfirmTimeout'),
+        videoReelsContractAddress: this.configService.get(
+          'web3.videoReelsContractAddress',
+        ),
+      },
     };
   }
 }
