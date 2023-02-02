@@ -9,9 +9,13 @@ processes = []
   image = "artemkolodko/stripe-payments-backend"
 
 [env]
+  DB_NAME = "stripe_db"
+  DB_USERNAME = "postgres"
+  DB_PORT = "5433"
   CLIENT_URL = "https://stripefront.demos.country"
-  STRIPE_PRICE_ID = "price_1MKNNzGhotnAhRXNpK9oIVey"
-  STRIPE_SUBSCRIPTION_PRICE_ID = "price_1MMTwcGhotnAhRXNuiGmU8Q6"
+  RPC_URL = "https://api.s0.t.hmny.io"
+  ONE_COUNTRY_CONTRACT_ADDRESS = "0x3cc3c5f98ac3ff544279919dfcebfb7afe03a2ca"
+  VIDEO_REELS_CONTRACT_ADDRESS = "0x9c125e45d2d9e7152e7dabc4edd7e063bc27708a"
 
 [experimental]
   allowed_public_ports = []
