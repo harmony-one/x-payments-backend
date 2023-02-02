@@ -1,7 +1,7 @@
 ## Harmony Payments Service
 
 ## Payments flow
-
+<img width="1429" alt="HarmonyPaymentFlow" src="https://user-images.githubusercontent.com/8803471/216304320-79a5dce7-5bd2-4ddb-8653-860f76810163.png">
 
 ## Build and deploy
 ### fly.io
