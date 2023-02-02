@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentIntentDto {
@@ -9,4 +9,9 @@ export class CreatePaymentIntentDto {
   @ApiProperty({ default: 'usd' })
   @IsString()
   currency: string;
+
+  @ApiProperty({ default: 100 })
+  @IsString()
+  @IsOptional()
+  amount?: number;
 }

@@ -134,9 +134,9 @@ export class StripeService {
   }
 
   async createPaymentIntent(dto: CreatePaymentIntentDto) {
-    const { currency } = dto;
+    const { currency, amount = 100 } = dto;
     const intent = await this.stripe.paymentIntents.create({
-      amount: 100,
+      amount,
       currency,
       automatic_payment_methods: { enabled: true },
     });
