@@ -137,6 +137,7 @@ export class StripeController {
     );
 
     return {
+      amount,
       sessionId: session.id,
       paymentUrl: session.url,
     };
@@ -177,6 +178,7 @@ export class StripeController {
     );
 
     return {
+      amount: dto.amount,
       sessionId: session.id,
       paymentUrl: session.url,
     };

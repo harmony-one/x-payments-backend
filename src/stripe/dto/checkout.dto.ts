@@ -124,6 +124,10 @@ export class CheckoutCreateResponseDto {
   sessionId: string;
 
   @ApiProperty()
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty()
   @IsString()
   @Expose()
   paymentUrl: string;
