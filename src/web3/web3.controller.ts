@@ -20,9 +20,6 @@ export class Web3Controller {
   async getPrice(@Param('id') id: string) {
     const currency = 'usd';
     const data = await this.web3Service.getTokenPriceById(id, currency);
-    if (data[id] && data[id][currency]) {
-      return data[id][currency];
-    }
-    throw new BadRequestException('Unknown token id');
+    return data;
   }
 }
