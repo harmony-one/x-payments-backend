@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
-  CheckoutOneCountryRentDto,
   CheckoutCreateResponseDto,
+  CheckoutOneCountryRentDto,
   CheckoutVideoPayDto,
   CreateCheckoutSessionDto,
   StripeCheckoutDto,
@@ -30,6 +30,7 @@ import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
+  PaymentStatus,
   StripePaymentEntity,
   StripeProduct,
   StripeProductOpType,
@@ -80,16 +81,24 @@ export class StripeController {
     //   console.log('verified');
     // }
 
-    this.logger.log(
-      `Received Stripe webhook event id: ${body.id}, type: ${body.type}`,
-    );
+    const { id, type } = body;
+    this.logger.log(`Received Stripe webhook event id: ${id}, type: ${type}`);
 
-    if (body.type === 'checkout.session.completed') {
+    if (type === 'checkout.session.completed') {
       const sessionId = body.data.object.id;
       this.logger.log(
-        `Stripe request completed, id: ${body.id}, sessionId: ${sessionId}`,
+        `Stripe request completed, id: ${id}, sessionId: ${sessionId}`,
       );
       this.stripeService.onCheckoutPaymentSuccess(sessionId);
+    } else if (type === 'checkout.session.expired') {
+      const sessionId = body.data.object.id;
+      await this.stripeService.setPaymentStatus(
+        sessionId,
+        PaymentStatus.expired,
+      );
+      this.logger.log(
+        `Stripe request expired, id: ${id}, sessionId: ${sessionId}`,
+      );
     }
   }
 
