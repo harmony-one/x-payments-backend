@@ -109,7 +109,7 @@ export class StripeController {
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
-    const { params, successUrl, cancelUrl } = dto;
+    const { userAddress, params, successUrl, cancelUrl } = dto;
     const amount = await this.web3Service.getDomainPriceInCents(params.name);
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
@@ -124,7 +124,7 @@ export class StripeController {
       product: StripeProduct.oneCountry,
       opType: StripeProductOpType.rent,
       sessionId: session.id,
-      userAddress: dto.userAddress,
+      userAddress,
       amount,
       params: dto.params,
     };
