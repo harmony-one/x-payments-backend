@@ -100,12 +100,14 @@ export class StripeController {
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
+    const { params, successUrl, cancelUrl } = dto;
+    const amount = await this.web3Service.getDomainPriceInCents(params.name);
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
-      // description: `Rent ${dto.params.name} domain`,
-      amount: dto.amount,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.successUrl,
+      // description: `Rent domain: ${dto.params.name}.1.country`,
+      amount,
+      successUrl,
+      cancelUrl,
     };
     const session = await this.stripeService.createCheckoutSession(checkoutDto);
 
@@ -114,13 +116,13 @@ export class StripeController {
       opType: StripeProductOpType.rent,
       sessionId: session.id,
       userAddress: dto.userAddress,
-      amount: dto.amount,
+      amount,
       params: dto.params,
     };
     await this.stripeService.createStripePayment(paymentDto);
 
     this.logger.log(
-      `${StripeProduct.shortReelsVideos} - created new payment session: ${
+      `${StripeProduct.oneCountry}: created new payment session: ${
         session.id
       }, dto: ${JSON.stringify(dto)}`,
     );
@@ -160,7 +162,7 @@ export class StripeController {
     await this.stripeService.createStripePayment(paymentDto);
 
     this.logger.log(
-      `${StripeProduct.shortReelsVideos} - created new payment session: ${
+      `${StripeProduct.shortReelsVideos}: created new payment session: ${
         session.id
       }, dto: ${JSON.stringify(dto)}`,
     );

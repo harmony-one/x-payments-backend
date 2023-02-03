@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OneCountry } from 'one-country-sdk';
 import { HttpService } from '@nestjs/axios';
@@ -26,22 +26,32 @@ export class Web3Service {
     });
   }
 
-  getPriceByName(name: string) {
-    return this.oneCountry.getPriceByName(name);
-  }
-
-  // Coingecko Free plan API https://www.coingecko.com/en/api/documentation
-  async getTokenPriceById(id: string, currency: string) {
+  // CoinGecko Free plan API https://www.coingecko.com/en/api/documentation
+  async getTokenPriceById(id: string, currency = 'usd'): Promise<number> {
     const { data } = await firstValueFrom(
       this.httpService.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=${currency}`,
       ),
     );
-    return data;
+    if (data && data[id] && data[id][currency]) {
+      return data[id][currency];
+    }
+    throw new Error(
+      `Cannot find pair id: ${id}, currency: ${currency}. Check CoinGecko API.`,
+    );
   }
 
-  async getDomainPriceByName(name: string) {
+  async getDomainPriceInOne(name: string) {
     return this.oneCountry.getPriceByName(name);
+  }
+
+  async getDomainPriceInCents(name: string) {
+    const priceInOneTokens = await this.getDomainPriceInOne(name);
+    const oneTokenPriceUsd = await this.getTokenPriceById('harmony');
+    const priceInUsdCents = Math.round(
+      (+priceInOneTokens / Math.pow(10, 18)) * oneTokenPriceUsd * 100,
+    );
+    return priceInUsdCents;
   }
 
   async rent(

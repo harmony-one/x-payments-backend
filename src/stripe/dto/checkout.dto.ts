@@ -47,10 +47,6 @@ class OneCountryRentParams {
 }
 
 export class CheckoutOneCountryRentDto {
-  @ApiProperty({ description: 'Amount in cents ¢' })
-  @Type(() => Number)
-  amount: number;
-
   @ApiProperty()
   @IsString()
   userAddress: string;

@@ -196,7 +196,7 @@ export class StripeService {
 
     const { name, url, telegram, email, phone } = params;
 
-    const domainPrice = await this.web3Service.getDomainPriceByName(name);
+    const domainPrice = await this.web3Service.getDomainPriceInOne(name);
 
     this.logger.log(`Domain ${name} current price: ${domainPrice}`);
 
