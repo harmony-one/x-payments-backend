@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Web3Service } from './web3.service';
 
@@ -20,6 +20,21 @@ export class Web3Controller {
   async getPrice(@Param('id') id: string) {
     const currency = 'usd';
     const data = await this.web3Service.getTokenPriceById(id, currency);
+    return data;
+  }
+
+  @Get('/balance/:address')
+  @ApiParam({
+    name: 'address',
+    required: true,
+    description: 'Harmony address, starting with 0x',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: String,
+  })
+  async getBalance(@Param('address') balance: string) {
+    const data = await this.web3Service.getAddressBalance(balance);
     return data;
   }
 }

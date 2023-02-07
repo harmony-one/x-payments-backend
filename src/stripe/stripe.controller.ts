@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   Param,
@@ -96,9 +97,6 @@ export class StripeController {
         sessionId,
         PaymentStatus.expired,
       );
-      this.logger.log(
-        `Stripe request expired, id: ${id}, sessionId: ${sessionId}`,
-      );
     }
   }
 
@@ -110,7 +108,25 @@ export class StripeController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
     const { userAddress, params, successUrl, cancelUrl } = dto;
-    const amount = await this.web3Service.getDomainPriceInCents(params.name);
+
+    this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
+
+    const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
+    const domainPrice = await this.web3Service.getDomainPriceInOne(params.name);
+    this.logger.log(
+      `Service balance: ${serviceBalance}, domain price: ${domainPrice}`,
+    );
+
+    if (serviceBalance <= domainPrice) {
+      throw new InternalServerErrorException(
+        `Insufficient funds on service account balance: ${serviceBalance}, required: ${domainPrice}. Please contract administrator.`,
+      );
+    }
+
+    const oneTokenPrice = await this.web3Service.getTokenPriceById('harmony');
+    const amount = Math.round(
+      (+domainPrice / Math.pow(10, 18)) * oneTokenPrice * 100,
+    );
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
       // description: `Rent domain: ${dto.params.name}.1.country`,

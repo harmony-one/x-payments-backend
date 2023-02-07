@@ -105,7 +105,7 @@ export class StripeService {
   }
 
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
-    this.logger.log(`SessionId ${sessionId} set payment status: ${status}`);
+    this.logger.log(`Set payment status: ${status}, session id: ${sessionId}`);
     await this.dataSource.manager.update(
       StripePaymentEntity,
       {
@@ -210,7 +210,9 @@ export class StripeService {
     );
 
     this.logger.log(
-      `Domain ${name} rented by BE, transaction hash: ${rentTx.transactionHash}`,
+      `Domain ${name} rented by service account ${this.web3Service.getOneCountryAccountAddress()}, transaction hash: ${
+        rentTx.transactionHash
+      }`,
     );
 
     // Wait until transaction will be confirmed

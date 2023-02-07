@@ -45,13 +45,8 @@ export class Web3Service {
     return this.oneCountry.getPriceByName(name);
   }
 
-  async getDomainPriceInCents(name: string) {
-    const priceInOneTokens = await this.getDomainPriceInOne(name);
-    const oneTokenPriceUsd = await this.getTokenPriceById('harmony');
-    const priceInUsdCents = Math.round(
-      (+priceInOneTokens / Math.pow(10, 18)) * oneTokenPriceUsd * 100,
-    );
-    return priceInUsdCents;
+  getOneCountryAccountAddress() {
+    return this.oneCountry.accountAddress;
   }
 
   async rent(
@@ -71,6 +66,20 @@ export class Web3Service {
       phone,
     );
     return tx;
+  }
+
+  async getAddressBalance(address: string) {
+    const web3 = new Web3(this.configService.get('web3.rpcUrl'));
+    const balance = await web3.eth.getBalance(address);
+    return balance;
+    // return web3.utils.toWei(balance);
+  }
+
+  async getOneCountryServiceBalance() {
+    const balance = await this.getAddressBalance(
+      this.oneCountry.accountAddress,
+    );
+    return balance;
   }
 
   async transferToken(to: string, name: string) {
