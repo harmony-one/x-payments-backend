@@ -75,7 +75,7 @@ export class StripeController {
   @ApiExcludeEndpoint()
   @UsePipes(new ValidationPipe({ transform: true }))
   async stripeWebHook(@Headers('stripe-signature') sig, @Body() body) {
-    // const event = this.stripeService.verifyEvent(req.body, sig);
+    // const event = this.stripeService.verifyEvent(body, sig);
     // if (!event) {
     //   console.log('error');
     // } else {
@@ -119,14 +119,23 @@ export class StripeController {
 
     if (serviceBalance <= domainPrice) {
       throw new InternalServerErrorException(
-        `Insufficient funds on service account balance: ${serviceBalance}, required: ${domainPrice}. Please contract administrator.`,
+        `Insufficient funds on service account balance: ${serviceBalance}, required: ${domainPrice}. Please contact administrator.`,
       );
     }
 
     const oneTokenPrice = await this.web3Service.getTokenPriceById('harmony');
-    const amount = Math.round(
+    let amount = Math.round(
       (+domainPrice / Math.pow(10, 18)) * oneTokenPrice * 100,
     );
+
+    const minAmount = this.configService.get('stripe.checkoutMinAmount');
+    if (amount < minAmount) {
+      this.logger.log(
+        `Calculated amount = ${amount}, min amount: ${minAmount}. Set amount = ${minAmount}.`,
+      );
+      amount = minAmount;
+    }
+
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
       // description: `Rent domain: ${dto.params.name}.1.country`,
@@ -142,9 +151,10 @@ export class StripeController {
       sessionId: session.id,
       userAddress,
       amount,
-      params: dto.params,
+      params,
     };
-    await this.stripeService.createStripePayment(paymentDto);
+
+    await this.stripeService.savePayment(paymentDto);
 
     this.logger.log(
       `${StripeProduct.oneCountry}: created new payment session: ${
@@ -185,7 +195,7 @@ export class StripeController {
       params: dto.params,
     };
 
-    await this.stripeService.createStripePayment(paymentDto);
+    await this.stripeService.savePayment(paymentDto);
 
     this.logger.log(
       `${StripeProduct.shortReelsVideos}: created new payment session: ${

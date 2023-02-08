@@ -84,7 +84,7 @@ export class StripeService {
     return session;
   }
 
-  async createStripePayment(dto: CreatePaymentDto) {
+  async savePayment(dto: CreatePaymentDto) {
     await this.dataSource.manager.insert(StripePaymentEntity, {
       product: dto.product,
       opType: dto.opType,
