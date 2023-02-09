@@ -11,7 +11,10 @@ export default () => ({
     priceId: process.env.STRIPE_PRICE_ID || '',
     subscriptionPriceId: process.env.STRIPE_SUBSCRIPTION_PRICE_ID || '',
     apiVersion: process.env.STRIPE_API_VERSION || '2022-11-15',
-    checkoutMinAmount: process.env.STRIPE_CHECKOUT_MIN_AMOUNT || 100, // 100 cents = $1
+    checkoutMinAmount: +(process.env.STRIPE_CHECKOUT_MIN_AMOUNT || 100), // 100 cents = $1
+    verifyWebhookEvent: Boolean(
+      process.env.STRIPE_VERIFY_WEBHOOK_EVENT || false,
+    ),
   },
   web3: {
     rpcUrl: process.env.RPC_URL || 'https://api.s0.t.hmny.io',

@@ -5,7 +5,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Required to verify Stripe Webhook event signature (https://stripe.com/docs/webhooks/signatures)
+  });
   app.useGlobalPipes(new ValidationPipe());
 
   const configService = app.get(ConfigService);

@@ -9,6 +9,8 @@ import {
   Param,
   Post,
   Query,
+  RawBodyRequest,
+  Req,
   Res,
   UsePipes,
   ValidationPipe,
@@ -73,31 +75,46 @@ export class StripeController {
 
   @Post('/webhook')
   @ApiExcludeEndpoint()
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async stripeWebHook(@Headers('stripe-signature') sig, @Body() body) {
-    // const event = this.stripeService.verifyEvent(body, sig);
-    // if (!event) {
-    //   console.log('error');
-    // } else {
-    //   console.log('verified');
-    // }
-
+  async stripeWebHook(
+    @Headers('stripe-signature') signature,
+    @Req() req: RawBodyRequest<Request>, // Don't remove, required by Stripe to construct event and verify signature (https://stripe.com/docs/webhooks/signatures)
+    @Res() res,
+    @Body() body,
+  ) {
     const { id, type } = body;
-    this.logger.log(`Received Stripe webhook event id: ${id}, type: ${type}`);
+    const verifyEvent = this.configService.get('stripe.verifyWebhookEvent');
+    this.logger.log(
+      `Received Stripe webhook event id: ${id}, type: ${type}. Verify event signature: ${verifyEvent}.`,
+    );
 
-    if (type === 'checkout.session.completed') {
-      const sessionId = body.data.object.id;
-      this.logger.log(
-        `Stripe request completed, id: ${id}, sessionId: ${sessionId}`,
-      );
-      this.stripeService.onCheckoutPaymentSuccess(sessionId);
-    } else if (type === 'checkout.session.expired') {
-      const sessionId = body.data.object.id;
-      await this.stripeService.setPaymentStatus(
-        sessionId,
-        PaymentStatus.expired,
-      );
+    if (verifyEvent) {
+      try {
+        this.stripeService.verifyWebhookEvent(req.rawBody, signature);
+      } catch (e) {
+        this.logger.error(`Cannot verify webhook event: ${e.message}, exit`);
+        return;
+      }
     }
+
+    switch (type) {
+      case 'checkout.session.completed': {
+        const sessionId = body.data.object.id;
+        this.logger.log(
+          `Stripe request completed, id: ${id}, sessionId: ${sessionId}`,
+        );
+        this.stripeService.handleCheckoutPaymentSuccess(sessionId);
+        break;
+      }
+      case 'checkout.session.expired': {
+        const sessionId = body.data.object.id;
+        await this.stripeService.setPaymentStatus(
+          sessionId,
+          PaymentStatus.expired,
+        );
+        break;
+      }
+    }
+    res.json({ received: true });
   }
 
   @Post('/checkout/one-country/rent')

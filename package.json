@@ -1,7 +1,7 @@
 {
   "name": "stripe-payments-backend",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "stripe-payments-backend repository",
   "license": "MIT",
   "scripts": {

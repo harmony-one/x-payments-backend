@@ -117,19 +117,14 @@ export class StripeService {
     );
   }
 
-  // Verify that request is from Stripe
-  // https://stripe.com/docs/payments/checkout/fulfill-orders
-  verifyEvent(payload: any, sig: string) {
-    let event;
+  // https://stripe.com/docs/webhooks/signatures
+  verifyWebhookEvent(rawBody: Buffer, sig: string) {
     const endpointSecret = this.configService.get('stripe.endpointSecret');
-
-    try {
-      event = this.stripe.webhooks.constructEvent(payload, sig, endpointSecret);
-    } catch (err) {
-      console.log('Error:', err.message);
-      return null;
-    }
-
+    const event = this.stripe.webhooks.constructEvent(
+      rawBody,
+      sig,
+      endpointSecret,
+    );
     return event;
   }
 
@@ -143,11 +138,11 @@ export class StripeService {
     return intent;
   }
 
-  async onCheckoutPaymentSuccess(sessionId: string) {
+  async handleCheckoutPaymentSuccess(sessionId: string) {
     const payment = await this.getPaymentBySessionId(sessionId);
 
     if (!payment) {
-      this.logger.error(`Cannot find payment with sessionId: "${sessionId}"`);
+      this.logger.error(`Cannot find payment with sessionId: ${sessionId}`);
       return;
     }
 
