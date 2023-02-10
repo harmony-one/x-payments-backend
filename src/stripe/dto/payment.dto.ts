@@ -1,4 +1,5 @@
 import {
+  PaymentStatus,
   StripePaymentEntity,
   StripeProduct,
   StripeProductOpType,
@@ -30,6 +31,15 @@ export class ListAllPaymentsDto {
   @IsEnum(StripeProductOpType)
   @IsOptional()
   opType?: StripeProductOpType;
+
+  @ApiProperty({
+    type: PaymentStatus,
+    enum: PaymentStatus,
+    required: false,
+  })
+  @IsEnum(PaymentStatus)
+  @IsOptional()
+  status?: PaymentStatus;
 
   @ApiProperty({ type: String, required: false })
   @IsOptional()

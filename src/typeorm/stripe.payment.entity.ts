@@ -9,12 +9,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsObject, IsString } from 'class-validator';
 
 export enum PaymentStatus {
-  pending = 'pending', // Payment has begun, but is not complete
-  failed = 'failed', // Failed on Stripe side
-  processing = 'processing', // Payment completed, contract call processing by service
-  processingFailed = 'processing_failed', // Contract call failed on payments service side
-  completed = 'completed', // Payment that has been paid and contract was successfully called
-  expired = 'expired', // Expired by event from Stripe side
+  pending = 'pending', // Payment was initiated by user
+  failed = 'failed', // Payment failed on Stripe side
+  processing = 'processing', // Payment completed, smart contract call processing by service
+  processingFailed = 'processing_failed', // Smart contract call failed on Payments service side
+  completed = 'completed', // Payment that has been paid and contract was successfully called.
+  expired = 'expired', // Payment session expired on the Stripe side
 }
 
 export enum StripeProduct {
