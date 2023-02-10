@@ -120,6 +120,9 @@ export class StripeService {
         },
         skip: offset,
         take: limit,
+        order: {
+          id: 'desc',
+        },
       },
     );
 
