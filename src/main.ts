@@ -16,6 +16,7 @@ async function bootstrap() {
     .setTitle(configService.get('name'))
     .setDescription('1.country API description')
     .setVersion(configService.get('version'))
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-API-KEY' }, 'X-API-KEY')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

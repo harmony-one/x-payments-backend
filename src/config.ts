@@ -1,6 +1,7 @@
 import * as process from 'process';
 
 export default () => ({
+  apiKey: process.env.API_KEY || '',
   client: {
     url: process.env.CLIENT_URL || '',
   },

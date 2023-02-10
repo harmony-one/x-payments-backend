@@ -9,7 +9,11 @@ import { DataSource } from 'typeorm';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { PaymentStatus, StripeProduct } from '../typeorm/stripe.payment.entity';
-import { CreatePaymentDto } from './dto/payment.dto';
+import {
+  CreatePaymentDto,
+  ListAllPaymentsDto,
+  ListAllPaymentsResponseDto,
+} from './dto/payment.dto';
 import { Web3Service } from '../web3/web3.service';
 
 @Injectable()
@@ -102,6 +106,27 @@ export class StripeService {
       },
     });
     return row;
+  }
+
+  async getPayments(
+    dto: ListAllPaymentsDto,
+  ): Promise<ListAllPaymentsResponseDto> {
+    const { offset, limit, ...rest } = dto;
+    const [items, count] = await this.dataSource.manager.findAndCount(
+      StripePaymentEntity,
+      {
+        where: {
+          ...rest,
+        },
+        skip: offset,
+        take: limit,
+      },
+    );
+
+    return {
+      items,
+      count,
+    };
   }
 
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {

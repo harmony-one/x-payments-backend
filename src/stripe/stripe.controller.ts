@@ -12,6 +12,7 @@ import {
   RawBodyRequest,
   Req,
   Res,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -27,6 +28,7 @@ import {
   ApiExcludeEndpoint,
   ApiOkResponse,
   ApiParam,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
@@ -38,7 +40,12 @@ import {
   StripeProduct,
   StripeProductOpType,
 } from '../typeorm/stripe.payment.entity';
-import { CreatePaymentDto } from './dto/payment.dto';
+import {
+  CreatePaymentDto,
+  ListAllPaymentsDto,
+  ListAllPaymentsResponseDto,
+} from './dto/payment.dto';
+import { ApiKeyGuard } from '../auth/ApiKeyGuard';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -94,6 +101,10 @@ export class StripeController {
         this.logger.error(`Cannot verify webhook event: ${e.message}, exit`);
         return;
       }
+    } else {
+      this.logger.warn(
+        `Stripe webhook signature verification is disabled. Turn on in production: STRIPE_VERIFY_WEBHOOK_EVENT=true.`,
+      );
     }
 
     switch (type) {
@@ -244,5 +255,17 @@ export class StripeController {
       throw new NotFoundException('Payment not found');
     }
     return payment;
+  }
+
+  @ApiSecurity('X-API-KEY')
+  @Get('/payments')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @UseGuards(ApiKeyGuard)
+  @ApiOkResponse({
+    type: ListAllPaymentsResponseDto,
+  })
+  async getPayments(@Query() dto: ListAllPaymentsDto) {
+    const data = await this.stripeService.getPayments(dto);
+    return data;
   }
 }
