@@ -1,4 +1,9 @@
 ## Harmony Payments Service
+The service allows users to pay for 1.country services with a credit card / Apple Pay / Google Pay.
+
+Supported contract methods:
+- rent ([1.country v1.1](https://github.com/harmony-one/.1.country/blob/v1.1/contracts/contracts/D1DCV2.sol))
+- payForVideoVanityURLAccess ([shorts-reels-videos-contract](https://github.com/harmony-one/shorts-reels-videos-contract))
 
 ## Payments flow
 <img width="1429" alt="HarmonyPaymentFlow" src="https://user-images.githubusercontent.com/8803471/216304320-79a5dce7-5bd2-4ddb-8653-860f76810163.png">
