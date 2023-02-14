@@ -8,7 +8,10 @@ import {
 import { DataSource } from 'typeorm';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import { PaymentStatus, StripeProduct } from '../typeorm/stripe.payment.entity';
+import {
+  CheckoutMethod,
+  PaymentStatus,
+} from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
   ListAllPaymentsDto,
@@ -90,11 +93,11 @@ export class StripeService {
 
   async savePayment(dto: CreatePaymentDto) {
     await this.dataSource.manager.insert(StripePaymentEntity, {
-      product: dto.product,
-      opType: dto.opType,
+      method: dto.method,
       sessionId: dto.sessionId,
       userAddress: dto.userAddress || '',
-      amount: dto.amount,
+      amountUsd: dto.amountUsd,
+      amountOne: dto.amountOne,
       params: dto.params,
     });
   }
@@ -186,19 +189,16 @@ export class StripeService {
     this.logger.log(`Processing payment ${JSON.stringify(payment)}`);
 
     try {
-      switch (payment.product) {
-        case StripeProduct.oneCountry: {
-          await this.onPaymentOneCountryRent(payment);
-          break;
-        }
-        case StripeProduct.shortReelsVideos: {
-          await this.onPaymentVideoPay(payment);
-          break;
-        }
-        default: {
-          this.logger.error(`Unknown product: ${payment.product}, return`);
-          return;
-        }
+      if (payment.method === CheckoutMethod.rent) {
+        await this.onPaymentOneCountryRent(payment);
+      } else if (payment.method === CheckoutMethod.payForVanityURLAccessFor) {
+        const tx = await this.web3Service.payForVanityURLAccessFor(payment);
+        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
+      } else if (payment.method === CheckoutMethod.sendDonationFor) {
+        const tx = await this.web3Service.sendDonationFor(payment);
+        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
+      } else {
+        throw new Error(`Unknown method: ${payment.method}`);
       }
 
       await this.setPaymentStatus(sessionId, PaymentStatus.completed);
@@ -206,12 +206,6 @@ export class StripeService {
       await this.setPaymentStatus(sessionId, PaymentStatus.processingFailed);
       this.logger.error(`Cannot complete payment ${sessionId}: ${e.message}`);
     }
-  }
-
-  async onPaymentVideoPay(payment: StripePaymentEntity) {
-    const { params } = payment;
-    const tx = await this.web3Service.payForVideoVanityURLAccess(params);
-    this.logger.log(`Transaction hash: ${tx.transactionHash}`);
   }
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {

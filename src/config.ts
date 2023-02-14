@@ -18,7 +18,7 @@ export default () => ({
     ),
   },
   web3: {
-    rpcUrl: process.env.RPC_URL || 'https://api.s0.t.hmny.io',
+    rpcUrl: process.env.RPC_URL || 'https://api.harmony.one',
     oneCountryContractAddress:
       process.env.ONE_COUNTRY_CONTRACT_ADDRESS ||
       '0xaef596d26be185d1c25c0aadfab6ab054e7c011f',
@@ -26,8 +26,12 @@ export default () => ({
     txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT) || 4000,
     videoReelsContractAddress:
       process.env.VIDEO_REELS_CONTRACT_ADDRESS ||
-      '0x9c125e45d2d9e7152e7dabc4edd7e063bc27708a',
+      '0x3a6843f2AbC3CA960845108908Eae8D9d9CE058D',
     videoReelsPrivateKey: process.env.VIDEO_REELS_PRIVATE_KEY || '',
+    vanityUrlContractAddress:
+      process.env.VANITY_URL_CONTRACT_ADDRESS ||
+      '0x88a1afC4134f385337Dd5F530D452079fC9E14CC',
+    vanityUrlPrivateKey: process.env.VANITY_URL_PRIVATE_KEY || '',
   },
   version: process.env.npm_package_version || '0.0.1',
   name: process.env.npm_package_name || '',

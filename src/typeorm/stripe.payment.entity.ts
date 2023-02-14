@@ -17,14 +17,10 @@ export enum PaymentStatus {
   expired = 'expired', // Payment session expired on the Stripe side
 }
 
-export enum StripeProduct {
-  oneCountry = 'oneCountry',
-  shortReelsVideos = 'shortReelsVideos',
-}
-
-export enum StripeProductOpType {
+export enum CheckoutMethod {
   rent = 'rent',
-  videoPay = 'videoPay',
+  payForVanityURLAccessFor = 'payForVanityURLAccessFor',
+  sendDonationFor = 'sendDonationFor',
 }
 
 @Entity({ name: 'stripe_payments' })
@@ -40,20 +36,12 @@ export class StripePaymentEntity {
   sessionId: string;
 
   @ApiProperty()
-  @IsEnum(StripeProduct)
+  @IsEnum(CheckoutMethod)
   @Column({
     type: 'varchar',
-    enum: StripeProduct,
+    enum: CheckoutMethod,
   })
-  product: StripeProduct;
-
-  @ApiProperty()
-  @IsEnum(StripeProductOpType)
-  @Column({
-    type: 'varchar',
-    enum: StripeProductOpType,
-  })
-  opType: StripeProductOpType;
+  method: CheckoutMethod;
 
   @ApiProperty()
   @IsString()
@@ -67,10 +55,16 @@ export class StripePaymentEntity {
   @ApiProperty()
   @IsNumber()
   @Column({
-    type: 'integer',
-    default: 0,
+    type: 'varchar',
   })
-  amount: number;
+  amountUsd: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Column({
+    type: 'varchar',
+  })
+  amountOne: string;
 
   @ApiProperty()
   @IsString()

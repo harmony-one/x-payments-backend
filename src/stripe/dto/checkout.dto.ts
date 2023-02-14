@@ -82,10 +82,6 @@ export class VideoContractParams {
 }
 
 export class CheckoutVideoPayDto {
-  @ApiProperty({ description: 'Pay amount in cents USD' })
-  @IsNumber()
-  amount: number;
-
   @ApiProperty({ type: () => VideoContractParams })
   params: VideoContractParams;
 
@@ -96,6 +92,47 @@ export class CheckoutVideoPayDto {
   @ApiProperty()
   @IsString()
   cancelUrl: string;
+}
+
+export class SendDonationForParams {
+  @ApiProperty()
+  @IsString()
+  user: string;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  aliasName: string;
+}
+
+export class SendDonationForDto {
+  @ApiProperty()
+  @IsString()
+  amountOne: string;
+
+  @ApiProperty({ type: () => VideoContractParams })
+  params: SendDonationForParams;
+
+  @ApiProperty()
+  @IsString()
+  successUrl: string;
+
+  @ApiProperty()
+  @IsString()
+  cancelUrl: string;
+}
+
+export class CheckoutVideoPayPriceDto {
+  @ApiProperty({ description: 'Domain name' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ description: 'Alias name' })
+  @IsString()
+  aliasName: string;
 }
 
 export class CreateCheckoutSessionDto {
@@ -125,10 +162,22 @@ export class CheckoutCreateResponseDto {
 
   @ApiProperty()
   @IsNumber()
-  amount: number;
+  amountUsd: string;
+
+  @ApiProperty()
+  @IsNumber()
+  amountOne: string;
 
   @ApiProperty()
   @IsString()
   @Expose()
   paymentUrl: string;
+}
+
+export class CheckoutAmountResponseDto {
+  @ApiProperty()
+  amountOne: string;
+
+  @ApiProperty()
+  amountUsd: string;
 }

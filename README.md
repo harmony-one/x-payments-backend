@@ -11,11 +11,13 @@ Supported contract methods:
 ## Build and deploy
 ### Run locally
 1) Create .env file and setup env variables using .env.example
-2) Run app
+2) Run app:
 ```shell
 npm i
 npm start
 ```
+3) Open Swagger API [http://localhost:3001/api](http://localhost:3001/api)
+
 ### Deploy to fly.io
 1) Check `fly.toml` configuration. Login to fly.io `flyctl auth login`.
 2) Build docker image (M1)

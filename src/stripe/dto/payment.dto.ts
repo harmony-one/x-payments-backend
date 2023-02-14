@@ -1,36 +1,30 @@
 import {
   PaymentStatus,
   StripePaymentEntity,
-  StripeProduct,
-  StripeProductOpType,
+  CheckoutMethod,
 } from '../../typeorm/stripe.payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePaymentDto {
-  product: StripeProduct;
-  opType: StripeProductOpType;
+  method: CheckoutMethod;
   sessionId: string;
-  amount: number;
+  amountUsd: string;
+  amountOne: string;
   params: object;
   userAddress? = '';
 }
 
 export class ListAllPaymentsDto {
-  @ApiProperty({ type: StripeProduct, enum: StripeProduct, required: false })
-  @IsEnum(StripeProduct)
-  @IsOptional()
-  product?: StripeProduct;
-
   @ApiProperty({
-    type: StripeProductOpType,
-    enum: StripeProductOpType,
+    type: CheckoutMethod,
+    enum: CheckoutMethod,
     required: false,
   })
-  @IsEnum(StripeProductOpType)
+  @IsEnum(CheckoutMethod)
   @IsOptional()
-  opType?: StripeProductOpType;
+  opType?: CheckoutMethod;
 
   @ApiProperty({
     type: PaymentStatus,

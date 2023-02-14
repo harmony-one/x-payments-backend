@@ -5,13 +5,13 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3 = require('web3');
-import { AbiItem } from 'web3-utils';
-import * as ShortReelsVideoAbi from './abi/short-reels-video.abi.json';
-import { VideoContractParams } from '../stripe/dto/checkout.dto';
+import { StripePaymentEntity } from '../typeorm';
 
 @Injectable()
 export class Web3Service {
   private oneCountry: OneCountry;
+  private shortReelsVideos: OneCountry;
+  private vanityUrl: OneCountry;
   constructor(
     private configService: ConfigService,
     private readonly httpService: HttpService,
@@ -24,10 +24,28 @@ export class Web3Service {
       contractAddress: configService.get('web3.oneCountryContractAddress'),
       privateKey: configService.get('web3.oneWalletPrivateKey'),
     });
+
+    this.shortReelsVideos = new OneCountry({
+      provider,
+      contractAddress: configService.get('web3.oneCountryContractAddress'),
+      shortReelsVideosContractAddress: configService.get(
+        'web3.videoReelsContractAddress',
+      ),
+      privateKey: configService.get('web3.videoReelsPrivateKey'),
+    });
+
+    this.vanityUrl = new OneCountry({
+      provider,
+      contractAddress: configService.get('web3.oneCountryContractAddress'),
+      vanityUrlContractAddress: configService.get(
+        'web3.vanityUrlContractAddress',
+      ),
+      privateKey: configService.get('web3.vanityUrlPrivateKey'),
+    });
   }
 
   // CoinGecko Free plan API https://www.coingecko.com/en/api/documentation
-  async getTokenPriceById(id: string, currency = 'usd'): Promise<number> {
+  async getTokenPrice(id = 'harmony', currency = 'usd'): Promise<number> {
     const { data } = await firstValueFrom(
       this.httpService.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=${currency}`,
@@ -47,6 +65,17 @@ export class Web3Service {
 
   getOneCountryAccountAddress() {
     return this.oneCountry.accountAddress;
+  }
+
+  async getCheckoutUsdAmount(amountOne: string): Promise<string> {
+    const minAmount = this.configService.get('stripe.checkoutMinAmount');
+    const oneRate = await this.getTokenPrice('harmony');
+    const value = (oneRate * +amountOne) / Math.pow(10, 18);
+    const usdCents = Math.ceil(value * 100);
+    if (minAmount) {
+      return Math.max(usdCents, minAmount).toString();
+    }
+    return usdCents.toString();
   }
 
   async rent(
@@ -88,34 +117,30 @@ export class Web3Service {
     return tx;
   }
 
-  async payForVideoVanityURLAccess(dto: VideoContractParams) {
-    const { user, name, aliasName, paidAt } = dto;
-    const web3 = new Web3(this.configService.get('web3.rpcUrl'));
-    const contractAddress = this.configService.get(
-      'web3.videoReelsContractAddress',
-    );
-    const maintainerPK = this.configService.get('web3.videoReelsPrivateKey');
-    if (!maintainerPK) {
-      throw new Error(
-        'You need to setup env VIDEO_REELS_PRIVATE_KEY to sign video-reels contract transactions',
-      );
-    }
-    const account = web3.eth.accounts.privateKeyToAccount(maintainerPK);
-    web3.eth.accounts.wallet.add(account);
+  getVanityUrlPrice(domainName: string, aliasName: string) {
+    return this.vanityUrl.getVanityUrlPrice(domainName, aliasName);
+  }
 
-    const contract = new web3.eth.Contract(
-      ShortReelsVideoAbi as AbiItem[],
-      contractAddress,
+  async payForVanityURLAccessFor(payment: StripePaymentEntity) {
+    const { amountOne, params } = payment;
+    const tx = await this.shortReelsVideos.payForVanityURLAccessFor(
+      params.user,
+      params.name,
+      params.aliasName,
+      amountOne,
+      params.paidAt,
     );
+    return tx;
+  }
 
-    const callObj = { from: account.address };
-    const gasPrice = await web3.eth.getGasPrice();
-    const gasEstimate = await contract.methods
-      .payForVideoVanityURLAccess(user, name, aliasName, paidAt)
-      .estimateGas(callObj);
-    const tx = await contract.methods
-      .payForVideoVanityURLAccess(user, name, aliasName, paidAt)
-      .send({ ...callObj, gasPrice: gasPrice, gas: gasEstimate });
+  async sendDonationFor(payment: StripePaymentEntity) {
+    const { amountOne, params } = payment;
+    const tx = await this.shortReelsVideos.sendDonationFor(
+      params.user,
+      params.name,
+      params.aliasName,
+      amountOne,
+    );
     return tx;
   }
 }

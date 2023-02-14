@@ -19,7 +19,7 @@ export class Web3Controller {
   })
   async getPrice(@Param('id') id: string) {
     const currency = 'usd';
-    const data = await this.web3Service.getTokenPriceById(id, currency);
+    const data = await this.web3Service.getTokenPrice(id, currency);
     return data;
   }
 

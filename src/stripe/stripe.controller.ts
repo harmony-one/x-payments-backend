@@ -18,10 +18,13 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
+  CheckoutAmountResponseDto,
   CheckoutCreateResponseDto,
   CheckoutOneCountryRentDto,
   CheckoutVideoPayDto,
+  CheckoutVideoPayPriceDto,
   CreateCheckoutSessionDto,
+  SendDonationForDto,
   StripeCheckoutDto,
 } from './dto/checkout.dto';
 import {
@@ -37,8 +40,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   PaymentStatus,
   StripePaymentEntity,
-  StripeProduct,
-  StripeProductOpType,
+  CheckoutMethod,
 } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
@@ -140,99 +142,151 @@ export class StripeController {
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
 
     const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
-    const domainPrice = await this.web3Service.getDomainPriceInOne(params.name);
+    const amountOne = await this.web3Service.getDomainPriceInOne(params.name);
     this.logger.log(
-      `Service balance: ${serviceBalance}, domain price: ${domainPrice}`,
+      `Service balance: ${serviceBalance}, domain price: ${amountOne}`,
     );
 
-    if (serviceBalance <= domainPrice) {
+    if (serviceBalance <= amountOne) {
       throw new InternalServerErrorException(
-        `Insufficient funds on service account balance: ${serviceBalance}, required: ${domainPrice}. Please contact administrator.`,
+        `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
       );
     }
 
-    const oneTokenPrice = await this.web3Service.getTokenPriceById('harmony');
-    let amount = Math.round(
-      (+domainPrice / Math.pow(10, 18)) * oneTokenPrice * 100,
-    );
-
-    const minAmount = this.configService.get('stripe.checkoutMinAmount');
-    if (amount < minAmount) {
-      this.logger.log(
-        `Calculated amount = ${amount}, min amount: ${minAmount}. Set amount = ${minAmount}.`,
-      );
-      amount = minAmount;
-    }
+    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
 
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
       // description: `Rent domain: ${dto.params.name}.1.country`,
-      amount,
+      amount: +amountUsd,
       successUrl,
       cancelUrl,
     };
     const session = await this.stripeService.createCheckoutSession(checkoutDto);
 
     const paymentDto: CreatePaymentDto = {
-      product: StripeProduct.oneCountry,
-      opType: StripeProductOpType.rent,
+      method: CheckoutMethod.rent,
       sessionId: session.id,
       userAddress,
-      amount,
+      amountUsd,
+      amountOne,
       params,
     };
 
     await this.stripeService.savePayment(paymentDto);
 
     this.logger.log(
-      `${StripeProduct.oneCountry}: created new payment session: ${
-        session.id
-      }, dto: ${JSON.stringify(dto)}`,
+      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
     );
 
     return {
-      amount,
+      amountUsd,
+      amountOne,
       sessionId: session.id,
       paymentUrl: session.url,
     };
   }
 
-  @Post('/checkout/video/pay')
+  @Post('/checkout/payForVanityURLAccessFor')
   @ApiOkResponse({
     description: 'Stripe session params',
     type: CheckoutCreateResponseDto,
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutVideoPay(
+  async checkoutVideoPayFor(
     @Body() dto: CheckoutVideoPayDto,
   ): Promise<CheckoutCreateResponseDto> {
+    const amountOne = await this.web3Service.getVanityUrlPrice(
+      dto.params.name,
+      dto.params.aliasName,
+    );
+    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
     const checkoutDto: CreateCheckoutSessionDto = {
-      name: 'Video pay',
-      amount: dto.amount,
+      name: 'Live video pay',
+      amount: +amountUsd,
       successUrl: dto.successUrl,
       cancelUrl: dto.successUrl,
     };
     const session = await this.stripeService.createCheckoutSession(checkoutDto);
 
     const paymentDto: CreatePaymentDto = {
-      product: StripeProduct.shortReelsVideos,
-      opType: StripeProductOpType.videoPay,
+      method: CheckoutMethod.payForVanityURLAccessFor,
       sessionId: session.id,
       userAddress: '',
-      amount: dto.amount,
+      amountUsd,
+      amountOne,
       params: dto.params,
     };
 
     await this.stripeService.savePayment(paymentDto);
 
     this.logger.log(
-      `${StripeProduct.shortReelsVideos}: created new payment session: ${
-        session.id
-      }, dto: ${JSON.stringify(dto)}`,
+      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
     );
 
     return {
-      amount: dto.amount,
+      amountUsd,
+      amountOne,
+      sessionId: session.id,
+      paymentUrl: session.url,
+    };
+  }
+
+  @Post('/checkout/payForVanityURLAccessFor/amount')
+  @ApiOkResponse({
+    description: 'Stripe session params',
+    type: CheckoutAmountResponseDto,
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async estimatePayForVideo(@Body() dto: CheckoutVideoPayPriceDto) {
+    const amountOne = await this.web3Service.getVanityUrlPrice(
+      dto.name,
+      dto.aliasName,
+    );
+    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
+    return {
+      amountOne,
+      amountUsd,
+    };
+  }
+
+  @Post('/checkout/sendDonationFor')
+  @ApiOkResponse({
+    description: 'Stripe session params',
+    type: CheckoutCreateResponseDto,
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async sendDonationFor(
+    @Body() dto: SendDonationForDto,
+  ): Promise<CheckoutCreateResponseDto> {
+    const { amountOne } = dto;
+    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
+    const checkoutDto: CreateCheckoutSessionDto = {
+      name: 'Live video donation',
+      amount: +amountUsd,
+      successUrl: dto.successUrl,
+      cancelUrl: dto.successUrl,
+    };
+    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+
+    const paymentDto: CreatePaymentDto = {
+      method: CheckoutMethod.sendDonationFor,
+      sessionId: session.id,
+      userAddress: '',
+      amountUsd,
+      amountOne,
+      params: dto.params,
+    };
+
+    await this.stripeService.savePayment(paymentDto);
+
+    this.logger.log(
+      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
+    );
+
+    return {
+      amountUsd,
+      amountOne,
       sessionId: session.id,
       paymentUrl: session.url,
     };
