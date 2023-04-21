@@ -19,8 +19,6 @@ export enum PaymentStatus {
 
 export enum CheckoutMethod {
   rent = 'rent',
-  payForVanityURLAccessFor = 'payForVanityURLAccessFor',
-  sendDonationFor = 'sendDonationFor',
 }
 
 @Entity({ name: 'stripe_payments' })

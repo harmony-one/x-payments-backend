@@ -1,17 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OneCountry } from 'one-country-sdk';
+import { DCEns } from 'one-country-sdk';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3 = require('web3');
-import { StripePaymentEntity } from '../typeorm';
 
 @Injectable()
 export class Web3Service {
-  private oneCountry: OneCountry;
-  private shortReelsVideos: OneCountry;
-  private vanityUrl: OneCountry;
+  private dc: DCEns;
   constructor(
     private configService: ConfigService,
     private readonly httpService: HttpService,
@@ -19,28 +16,10 @@ export class Web3Service {
     const provider = new Web3.providers.HttpProvider(
       configService.get('web3.rpcUrl'),
     );
-    this.oneCountry = new OneCountry({
+    this.dc = new DCEns({
       provider,
       contractAddress: configService.get('web3.oneCountryContractAddress'),
       privateKey: configService.get('web3.oneWalletPrivateKey'),
-    });
-
-    this.shortReelsVideos = new OneCountry({
-      provider,
-      contractAddress: configService.get('web3.oneCountryContractAddress'),
-      shortReelsVideosContractAddress: configService.get(
-        'web3.videoReelsContractAddress',
-      ),
-      privateKey: configService.get('web3.videoReelsPrivateKey'),
-    });
-
-    this.vanityUrl = new OneCountry({
-      provider,
-      contractAddress: configService.get('web3.oneCountryContractAddress'),
-      vanityUrlContractAddress: configService.get(
-        'web3.vanityUrlContractAddress',
-      ),
-      privateKey: configService.get('web3.vanityUrlPrivateKey'),
     });
   }
 
@@ -60,11 +39,12 @@ export class Web3Service {
   }
 
   async getDomainPriceInOne(name: string) {
-    return this.oneCountry.getPriceByName(name);
+    const price = await this.dc.getPrice(name);
+    return price.amount;
   }
 
   getOneCountryAccountAddress() {
-    return this.oneCountry.accountAddress;
+    return this.dc.accountAddress;
   }
 
   async getCheckoutUsdAmount(amountOne: string): Promise<string> {
@@ -78,69 +58,30 @@ export class Web3Service {
     return usdCents.toString();
   }
 
-  async rent(
-    name: string,
-    url: string,
-    price: string,
-    telegram: string,
-    email: string,
-    phone: string,
-  ) {
-    const tx = await this.oneCountry.rent(
-      name,
-      url,
-      price,
-      telegram,
-      email,
-      phone,
+  private async sleep(timeout: number) {
+    return new Promise((resolve) => setTimeout(resolve, timeout));
+  }
+
+  async register(domainName: string, ownerAddress: string) {
+    const secret = Math.random().toString(26).slice(2);
+    const commitment = await this.dc.makeCommitment(
+      domainName,
+      ownerAddress,
+      secret,
     );
-    return tx;
+    await this.dc.commit(commitment);
+    await this.sleep(5000);
+    const txRegister = await this.dc.register(domainName, ownerAddress, secret);
+    return txRegister;
   }
 
   async getAddressBalance(address: string) {
     const web3 = new Web3(this.configService.get('web3.rpcUrl'));
-    const balance = await web3.eth.getBalance(address);
-    return balance;
+    return await web3.eth.getBalance(address);
     // return web3.utils.toWei(balance);
   }
 
   async getOneCountryServiceBalance() {
-    const balance = await this.getAddressBalance(
-      this.oneCountry.accountAddress,
-    );
-    return balance;
-  }
-
-  async transferToken(to: string, name: string) {
-    const from = this.oneCountry.accountAddress;
-    const tx = await this.oneCountry.safeTransferFrom(from, to, name);
-    return tx;
-  }
-
-  getVanityUrlPrice(domainName: string, aliasName: string) {
-    return this.vanityUrl.getVanityUrlPrice(domainName, aliasName);
-  }
-
-  async payForVanityURLAccessFor(payment: StripePaymentEntity) {
-    const { amountOne, params } = payment;
-    const tx = await this.shortReelsVideos.payForVanityURLAccessFor(
-      params.user,
-      params.name,
-      params.aliasName,
-      amountOne,
-      params.paidAt,
-    );
-    return tx;
-  }
-
-  async sendDonationFor(payment: StripePaymentEntity) {
-    const { amountOne, params } = payment;
-    const tx = await this.shortReelsVideos.sendDonationFor(
-      params.user,
-      params.name,
-      params.aliasName,
-      amountOne,
-    );
-    return tx;
+    return await this.getAddressBalance(this.dc.accountAddress);
   }
 }

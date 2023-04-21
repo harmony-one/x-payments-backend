@@ -191,12 +191,6 @@ export class StripeService {
     try {
       if (payment.method === CheckoutMethod.rent) {
         await this.onPaymentOneCountryRent(payment);
-      } else if (payment.method === CheckoutMethod.payForVanityURLAccessFor) {
-        const tx = await this.web3Service.payForVanityURLAccessFor(payment);
-        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
-      } else if (payment.method === CheckoutMethod.sendDonationFor) {
-        const tx = await this.web3Service.sendDonationFor(payment);
-        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
       } else {
         throw new Error(`Unknown method: ${payment.method}`);
       }
@@ -210,39 +204,13 @@ export class StripeService {
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {
     const { sessionId, userAddress, params } = payment;
+    const { name } = params;
 
-    const { name, url, telegram, email, phone } = params;
-
-    const domainPrice = await this.web3Service.getDomainPriceInOne(name);
-
-    this.logger.log(`Domain ${name} current price: ${domainPrice}`);
-
-    const rentTx = await this.web3Service.rent(
-      name,
-      url,
-      domainPrice,
-      telegram,
-      email,
-      phone,
-    );
-
-    this.logger.log(
-      `Domain ${name} rented by service account ${this.web3Service.getOneCountryAccountAddress()}, transaction hash: ${
-        rentTx.transactionHash
-      }`,
-    );
-
-    // Wait until transaction will be confirmed
-    await new Promise((resolve) =>
-      setTimeout(resolve, this.configService.get('web3.txConfirmTimeout')),
-    );
-
-    const transferTx = await this.web3Service.transferToken(userAddress, name);
-
-    this.logger.log(
-      `Domain ${name} transferred from service to user address ${userAddress}, transaction hash: ${transferTx.transactionHash}`,
-    );
-
+    const tx = await this.web3Service.register(name, userAddress);
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);
+
+    this.logger.log(
+      `Domain ${name} rented by user "${userAddress}", tx hash: "${tx.transactionHash}"`,
+    );
   }
 }

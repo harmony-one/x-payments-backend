@@ -27,23 +27,7 @@ export class StripeCheckoutDto {
 class OneCountryRentParams {
   @ApiProperty()
   @IsString()
-  name: string;
-
-  @ApiProperty()
-  @IsString()
-  url: string;
-
-  @ApiProperty()
-  @IsString()
-  telegram: string;
-
-  @ApiProperty()
-  @IsString()
-  email: string;
-
-  @ApiProperty()
-  @IsString()
-  phone: string;
+  domainName: string;
 }
 
 export class CheckoutOneCountryRentDto {

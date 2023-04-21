@@ -142,7 +142,9 @@ export class StripeController {
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
 
     const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
-    const amountOne = await this.web3Service.getDomainPriceInOne(params.name);
+    const amountOne = await this.web3Service.getDomainPriceInOne(
+      params.domainName,
+    );
     this.logger.log(
       `Service balance: ${serviceBalance}, domain price: ${amountOne}`,
     );
@@ -187,116 +189,11 @@ export class StripeController {
     };
   }
 
-  @Post('/checkout/payForVanityURLAccessFor')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutVideoPayFor(
-    @Body() dto: CheckoutVideoPayDto,
-  ): Promise<CheckoutCreateResponseDto> {
-    const amountOne = await this.web3Service.getVanityUrlPrice(
-      dto.params.name,
-      dto.params.aliasName,
-    );
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: 'Live video pay',
-      amount: +amountUsd,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.successUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
-
-    const paymentDto: CreatePaymentDto = {
-      method: CheckoutMethod.payForVanityURLAccessFor,
-      sessionId: session.id,
-      userAddress: '',
-      amountUsd,
-      amountOne,
-      params: dto.params,
-    };
-
-    await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
-  }
-
-  @Post('/checkout/payForVanityURLAccessFor/amount')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutAmountResponseDto,
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async estimatePayForVideo(@Body() dto: CheckoutVideoPayPriceDto) {
-    const amountOne = await this.web3Service.getVanityUrlPrice(
-      dto.name,
-      dto.aliasName,
-    );
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    return {
-      amountOne,
-      amountUsd,
-    };
-  }
-
-  @Post('/checkout/sendDonationFor')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async sendDonationFor(
-    @Body() dto: SendDonationForDto,
-  ): Promise<CheckoutCreateResponseDto> {
-    const { amountOne } = dto;
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: 'Live video donation',
-      amount: +amountUsd,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.successUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
-
-    const paymentDto: CreatePaymentDto = {
-      method: CheckoutMethod.sendDonationFor,
-      sessionId: session.id,
-      userAddress: '',
-      amountUsd,
-      amountOne,
-      params: dto.params,
-    };
-
-    await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
-  }
-
   @Get('/payment/:sessionId')
   @ApiParam({
     name: 'sessionId',
     required: true,
-    description: 'Stripe sessionId obtained by calling /checkout/ method',
+    description: 'Stripe sessionId',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
