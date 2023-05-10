@@ -18,13 +18,10 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
-  CheckoutAmountResponseDto,
   CheckoutCreateResponseDto,
   CheckoutOneCountryRentDto,
-  CheckoutVideoPayDto,
-  CheckoutVideoPayPriceDto,
   CreateCheckoutSessionDto,
-  SendDonationForDto,
+  OneCountryRentDto,
   StripeCheckoutDto,
 } from './dto/checkout.dto';
 import {
@@ -38,9 +35,10 @@ import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
-  PaymentStatus,
-  StripePaymentEntity,
   CheckoutMethod,
+  PaymentStatus,
+  PaymentType,
+  StripePaymentEntity,
 } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
@@ -118,6 +116,14 @@ export class StripeController {
         this.stripeService.handleCheckoutPaymentSuccess(sessionId);
         break;
       }
+      case 'payment_intent.succeeded': {
+        const sessionId = body.data.object.id;
+        this.logger.log(
+          `Stripe request "${type}" completed, id: ${id}, sessionId: ${sessionId}`,
+        );
+        this.stripeService.handleCheckoutPaymentSuccess(sessionId);
+        break;
+      }
       case 'checkout.session.expired': {
         const sessionId = body.data.object.id;
         await this.stripeService.setPaymentStatus(
@@ -145,11 +151,12 @@ export class StripeController {
     const amountOne = await this.web3Service.getDomainPriceInOne(
       params.domainName,
     );
+    const balanceDelta = +serviceBalance - +amountOne;
     this.logger.log(
-      `Service balance: ${serviceBalance}, domain price: ${amountOne}`,
+      `Service balance: ${serviceBalance}, domain price: ${amountOne}, delta: ${balanceDelta}`,
     );
 
-    if (serviceBalance <= amountOne) {
+    if (balanceDelta <= 0) {
       throw new InternalServerErrorException(
         `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
       );
@@ -167,6 +174,7 @@ export class StripeController {
     const session = await this.stripeService.createCheckoutSession(checkoutDto);
 
     const paymentDto: CreatePaymentDto = {
+      paymentType: PaymentType.checkout,
       method: CheckoutMethod.rent,
       sessionId: session.id,
       userAddress,
@@ -187,6 +195,51 @@ export class StripeController {
       sessionId: session.id,
       paymentUrl: session.url,
     };
+  }
+
+  @Post('/create-payment-intent/one-country/rent')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createPaymentIntentRent(@Body() dto: OneCountryRentDto) {
+    const { userAddress, params } = dto;
+
+    this.logger.log(
+      `oneCountry rent payment intent request: ${JSON.stringify(dto)}`,
+    );
+
+    const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
+    const amountOne = await this.web3Service.getDomainPriceInOne(
+      params.domainName,
+    );
+    const balanceDelta = +serviceBalance - +amountOne;
+    this.logger.log(
+      `Service balance: ${serviceBalance}, domain price: ${amountOne}, delta: ${balanceDelta}`,
+    );
+
+    if (balanceDelta <= 0) {
+      throw new InternalServerErrorException(
+        `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
+      );
+    }
+
+    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
+
+    const paymentIntent = await this.stripeService.createPaymentIntent({
+      amount: +amountUsd,
+    });
+
+    const paymentDto: CreatePaymentDto = {
+      paymentType: PaymentType.paymentIntent,
+      method: CheckoutMethod.rent,
+      sessionId: paymentIntent.id,
+      userAddress,
+      amountUsd,
+      amountOne,
+      params,
+    };
+
+    await this.stripeService.savePayment(paymentDto);
+
+    return paymentIntent;
   }
 
   @Get('/payment/:sessionId')

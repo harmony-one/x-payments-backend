@@ -93,6 +93,7 @@ export class StripeService {
 
   async savePayment(dto: CreatePaymentDto) {
     await this.dataSource.manager.insert(StripePaymentEntity, {
+      paymentType: dto.paymentType,
       method: dto.method,
       sessionId: dto.sessionId,
       userAddress: dto.userAddress || '',
@@ -160,7 +161,7 @@ export class StripeService {
   }
 
   async createPaymentIntent(dto: CreatePaymentIntentDto) {
-    const { currency, amount = 100 } = dto;
+    const { currency = 'usd', amount } = dto;
     const intent = await this.stripe.paymentIntents.create({
       amount,
       currency,
@@ -204,13 +205,13 @@ export class StripeService {
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {
     const { sessionId, userAddress, params } = payment;
-    const { name } = params;
+    const { domainName } = params;
 
-    const tx = await this.web3Service.register(name, userAddress);
+    const tx = await this.web3Service.register(domainName, userAddress);
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);
 
     this.logger.log(
-      `Domain ${name} rented by user "${userAddress}", tx hash: "${tx.transactionHash}"`,
+      `Domain "${domainName}" rented by user "${userAddress}", tx hash: "${tx.transactionHash}"`,
     );
   }
 }

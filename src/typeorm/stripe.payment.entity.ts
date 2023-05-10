@@ -8,6 +8,11 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsObject, IsString } from 'class-validator';
 
+export enum PaymentType {
+  checkout = 'checkout',
+  paymentIntent = 'payment_intent',
+}
+
 export enum PaymentStatus {
   pending = 'pending', // Payment was initiated by user
   failed = 'failed', // Payment failed on Stripe side
@@ -40,6 +45,15 @@ export class StripePaymentEntity {
     enum: CheckoutMethod,
   })
   method: CheckoutMethod;
+
+  @ApiProperty()
+  @IsEnum(PaymentType)
+  @Column({
+    type: 'varchar',
+    enum: PaymentType,
+    default: PaymentType.checkout,
+  })
+  paymentType: PaymentType;
 
   @ApiProperty()
   @IsString()
