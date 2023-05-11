@@ -32,29 +32,6 @@ export class StripeService {
     const apiVersion = configService.get('stripe.apiVersion');
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
-  async createStripeSession(dto: StripeCheckoutDto) {
-    const { mode, successUrl, cancelUrl } = dto;
-
-    const clientUrl = this.configService.get('client.url');
-    const priceId = this.configService.get('stripe.priceId');
-    const subscriptionPriceId = this.configService.get(
-      'stripe.subscriptionPriceId',
-    );
-
-    const session = await this.stripe.checkout.sessions.create({
-      line_items: [
-        {
-          // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-          price: mode === 'payment' ? priceId : subscriptionPriceId,
-          quantity: 1,
-        },
-      ],
-      mode,
-      success_url: successUrl || `${clientUrl}/success`,
-      cancel_url: cancelUrl || `${clientUrl}/canceled`,
-    });
-    return session;
-  }
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const {
@@ -70,7 +47,6 @@ export class StripeService {
     const session = await this.stripe.checkout.sessions.create({
       line_items: [
         {
-          // price: mode === 'payment' ? priceId : subscriptionPriceId,
           quantity,
           price_data: {
             currency,

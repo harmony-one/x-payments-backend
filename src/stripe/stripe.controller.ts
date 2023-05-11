@@ -57,29 +57,6 @@ export class StripeController {
     private readonly configService: ConfigService,
   ) {}
 
-  @ApiExcludeEndpoint()
-  @Get('/checkout')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createCheckoutSession(
-    @Res() res,
-    @Query() stripeCheckoutDto: StripeCheckoutDto,
-  ) {
-    const session = await this.stripeService.createStripeSession(
-      stripeCheckoutDto,
-    );
-    res.redirect(303, session.url);
-  }
-
-  @ApiExcludeEndpoint()
-  @Post('/create-payment-intent')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {
-    const paymentIntent = await this.stripeService.createPaymentIntent(dto);
-    return {
-      clientSecret: paymentIntent.client_secret,
-    };
-  }
-
   @Post('/webhook')
   @ApiExcludeEndpoint()
   async stripeWebHook(
@@ -89,12 +66,9 @@ export class StripeController {
     @Body() body,
   ) {
     const { id, type } = body;
-    const verifyEvent = this.configService.get('stripe.verifyWebhookEvent');
-    this.logger.log(
-      `Received Stripe webhook event id: ${id}, type: ${type}. Verify event signature: ${verifyEvent}.`,
-    );
+    this.logger.log(`Received Stripe webhook event id: ${id}, type: ${type}`);
 
-    if (verifyEvent) {
+    if (this.configService.get('stripe.verifyWebhookEvent')) {
       try {
         this.stripeService.verifyWebhookEvent(req.rawBody, signature);
       } catch (e) {
@@ -110,17 +84,11 @@ export class StripeController {
     switch (type) {
       case 'checkout.session.completed': {
         const sessionId = body.data.object.id;
-        this.logger.log(
-          `Stripe request completed, id: ${id}, sessionId: ${sessionId}`,
-        );
         this.stripeService.handleCheckoutPaymentSuccess(sessionId);
         break;
       }
       case 'payment_intent.succeeded': {
         const sessionId = body.data.object.id;
-        this.logger.log(
-          `Stripe request "${type}" completed, id: ${id}, sessionId: ${sessionId}`,
-        );
         this.stripeService.handleCheckoutPaymentSuccess(sessionId);
         break;
       }
