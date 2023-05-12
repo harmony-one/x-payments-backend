@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DCEns } from 'one-country-sdk';
 import { HttpService } from '@nestjs/axios';
@@ -62,6 +62,23 @@ export class Web3Service {
     return new Promise((resolve) => setTimeout(resolve, timeout));
   }
 
+  async validateDomainRent(domainName: string) {
+    const serviceBalance = await this.getOneCountryServiceBalance();
+    const amountOne = await this.getDomainPriceInOne(domainName);
+    const balanceDelta = +serviceBalance - +amountOne;
+    if (balanceDelta <= 0) {
+      throw new InternalServerErrorException(
+        `Insufficient funds to rent domain "${domainName}": required: ${amountOne}, on service balance: ${serviceBalance}`,
+      );
+    }
+    const amountUsd = await this.getCheckoutUsdAmount(amountOne);
+
+    return {
+      amountOne,
+      amountUsd,
+    };
+  }
+
   async register(domainName: string, ownerAddress: string) {
     const secret = Math.random().toString(26).slice(2);
     const commitment = await this.dc.makeCommitment(
@@ -71,8 +88,8 @@ export class Web3Service {
     );
     await this.dc.commit(commitment);
     await this.sleep(5000);
-    const txRegister = await this.dc.register(domainName, ownerAddress, secret);
-    return txRegister;
+    const tx = await this.dc.register(domainName, ownerAddress, secret);
+    return tx.transactionHash;
   }
 
   async getAddressBalance(address: string) {

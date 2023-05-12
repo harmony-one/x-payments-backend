@@ -115,22 +115,9 @@ export class StripeController {
 
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
 
-    const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
-    const amountOne = await this.web3Service.getDomainPriceInOne(
-      params.domainName,
+    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
+      dto.params.domainName,
     );
-    const balanceDelta = +serviceBalance - +amountOne;
-    this.logger.log(
-      `Service balance: ${serviceBalance}, domain price: ${amountOne}, delta: ${balanceDelta}`,
-    );
-
-    if (balanceDelta <= 0) {
-      throw new InternalServerErrorException(
-        `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
-      );
-    }
-
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
 
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
@@ -174,22 +161,9 @@ export class StripeController {
       `oneCountry rent payment intent request: ${JSON.stringify(dto)}`,
     );
 
-    const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
-    const amountOne = await this.web3Service.getDomainPriceInOne(
-      params.domainName,
+    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
+      dto.params.domainName,
     );
-    const balanceDelta = +serviceBalance - +amountOne;
-    this.logger.log(
-      `Service balance: ${serviceBalance}, domain price: ${amountOne}, delta: ${balanceDelta}`,
-    );
-
-    if (balanceDelta <= 0) {
-      throw new InternalServerErrorException(
-        `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
-      );
-    }
-
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
 
     const paymentIntent = await this.stripeService.createPaymentIntent({
       amount: +amountUsd,
@@ -206,8 +180,23 @@ export class StripeController {
     };
 
     await this.stripeService.savePayment(paymentDto);
-
     return paymentIntent;
+  }
+
+  @Get('/validate/rent/:domainName')
+  @ApiParam({
+    name: 'domainName',
+    required: true,
+    description: '1country domain name',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: StripePaymentEntity,
+  })
+  async validateRent(@Param() params) {
+    const { domainName } = params;
+    const data = await this.web3Service.validateDomainRent(domainName);
+    return data;
   }
 
   @Get('/payment/:sessionId')

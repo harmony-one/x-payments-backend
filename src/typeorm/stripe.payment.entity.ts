@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsObject, IsString } from 'class-validator';
+import { IsEnum, IsObject, IsString } from 'class-validator';
 
 export enum PaymentType {
   checkout = 'checkout',
@@ -65,16 +65,25 @@ export class StripePaymentEntity {
   status: PaymentStatus;
 
   @ApiProperty()
-  @IsNumber()
   @Column({
     type: 'varchar',
+    default: '',
+  })
+  txHash: string;
+
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '0',
   })
   amountUsd: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsString()
   @Column({
     type: 'varchar',
+    default: '0',
   })
   amountOne: string;
 
@@ -84,7 +93,7 @@ export class StripePaymentEntity {
     type: 'varchar',
     default: '',
   })
-  userAddress?: string;
+  userAddress: string;
 
   @ApiProperty()
   @IsObject()

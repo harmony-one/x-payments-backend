@@ -112,6 +112,18 @@ export class StripeService {
     };
   }
 
+  async setTxHash(sessionId: string, txHash: string) {
+    await this.dataSource.manager.update(
+      StripePaymentEntity,
+      {
+        sessionId,
+      },
+      {
+        txHash,
+      },
+    );
+  }
+
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
     this.logger.log(`Set payment status: ${status}, session id: ${sessionId}`);
     await this.dataSource.manager.update(
@@ -183,11 +195,12 @@ export class StripeService {
     const { sessionId, userAddress, params } = payment;
     const { domainName } = params;
 
-    const tx = await this.web3Service.register(domainName, userAddress);
+    const txHash = await this.web3Service.register(domainName, userAddress);
+    await this.setTxHash(sessionId, txHash);
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);
 
     this.logger.log(
-      `Domain "${domainName}" rented by user "${userAddress}", tx hash: "${tx.transactionHash}"`,
+      `Domain "${domainName}" rented by user "${userAddress}", tx hash: "${txHash}"`,
     );
   }
 }
