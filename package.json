@@ -1,8 +1,8 @@
 {
   "name": "stripe-payments-backend",
   "private": true,
-  "version": "2.4.0",
-  "description": "stripe-payments-backend repository",
+  "version": "3.0.0",
+  "description": "Harmony fiat payments service",
   "license": "MIT",
   "scripts": {
     "build": "nest build",
