@@ -19,9 +19,6 @@ export class AppController {
   @Get('/config')
   getConfig() {
     return {
-      client: {
-        url: this.configService.get('client.url'),
-      },
       stripe: {
         publishableKey: this.configService.get('stripe.publishableKey'),
         apiVersion: this.configService.get('stripe.apiVersion'),
@@ -32,9 +29,6 @@ export class AppController {
           'web3.oneCountryContractAddress',
         ),
         txConfirmTimeout: this.configService.get('web3.txConfirmTimeout'),
-        videoReelsContractAddress: this.configService.get(
-          'web3.videoReelsContractAddress',
-        ),
       },
     };
   }

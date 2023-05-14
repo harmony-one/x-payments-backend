@@ -32,29 +32,6 @@ export class StripeService {
     const apiVersion = configService.get('stripe.apiVersion');
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
-  async createStripeSession(dto: StripeCheckoutDto) {
-    const { mode, successUrl, cancelUrl } = dto;
-
-    const clientUrl = this.configService.get('client.url');
-    const priceId = this.configService.get('stripe.priceId');
-    const subscriptionPriceId = this.configService.get(
-      'stripe.subscriptionPriceId',
-    );
-
-    const session = await this.stripe.checkout.sessions.create({
-      line_items: [
-        {
-          // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-          price: mode === 'payment' ? priceId : subscriptionPriceId,
-          quantity: 1,
-        },
-      ],
-      mode,
-      success_url: successUrl || `${clientUrl}/success`,
-      cancel_url: cancelUrl || `${clientUrl}/canceled`,
-    });
-    return session;
-  }
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const {
@@ -70,7 +47,6 @@ export class StripeService {
     const session = await this.stripe.checkout.sessions.create({
       line_items: [
         {
-          // price: mode === 'payment' ? priceId : subscriptionPriceId,
           quantity,
           price_data: {
             currency,
@@ -93,6 +69,7 @@ export class StripeService {
 
   async savePayment(dto: CreatePaymentDto) {
     await this.dataSource.manager.insert(StripePaymentEntity, {
+      paymentType: dto.paymentType,
       method: dto.method,
       sessionId: dto.sessionId,
       userAddress: dto.userAddress || '',
@@ -135,6 +112,18 @@ export class StripeService {
     };
   }
 
+  async setTxHash(sessionId: string, txHash: string) {
+    await this.dataSource.manager.update(
+      StripePaymentEntity,
+      {
+        sessionId,
+      },
+      {
+        txHash,
+      },
+    );
+  }
+
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
     this.logger.log(`Set payment status: ${status}, session id: ${sessionId}`);
     await this.dataSource.manager.update(
@@ -160,7 +149,7 @@ export class StripeService {
   }
 
   async createPaymentIntent(dto: CreatePaymentIntentDto) {
-    const { currency, amount = 100 } = dto;
+    const { currency = 'usd', amount } = dto;
     const intent = await this.stripe.paymentIntents.create({
       amount,
       currency,
@@ -191,12 +180,6 @@ export class StripeService {
     try {
       if (payment.method === CheckoutMethod.rent) {
         await this.onPaymentOneCountryRent(payment);
-      } else if (payment.method === CheckoutMethod.payForVanityURLAccessFor) {
-        const tx = await this.web3Service.payForVanityURLAccessFor(payment);
-        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
-      } else if (payment.method === CheckoutMethod.sendDonationFor) {
-        const tx = await this.web3Service.sendDonationFor(payment);
-        this.logger.log(`Transaction hash: ${tx.transactionHash}`);
       } else {
         throw new Error(`Unknown method: ${payment.method}`);
       }
@@ -210,39 +193,14 @@ export class StripeService {
 
   async onPaymentOneCountryRent(payment: StripePaymentEntity) {
     const { sessionId, userAddress, params } = payment;
+    const { domainName } = params;
 
-    const { name, url, telegram, email, phone } = params;
-
-    const domainPrice = await this.web3Service.getDomainPriceInOne(name);
-
-    this.logger.log(`Domain ${name} current price: ${domainPrice}`);
-
-    const rentTx = await this.web3Service.rent(
-      name,
-      url,
-      domainPrice,
-      telegram,
-      email,
-      phone,
-    );
-
-    this.logger.log(
-      `Domain ${name} rented by service account ${this.web3Service.getOneCountryAccountAddress()}, transaction hash: ${
-        rentTx.transactionHash
-      }`,
-    );
-
-    // Wait until transaction will be confirmed
-    await new Promise((resolve) =>
-      setTimeout(resolve, this.configService.get('web3.txConfirmTimeout')),
-    );
-
-    const transferTx = await this.web3Service.transferToken(userAddress, name);
-
-    this.logger.log(
-      `Domain ${name} transferred from service to user address ${userAddress}, transaction hash: ${transferTx.transactionHash}`,
-    );
-
+    const txHash = await this.web3Service.register(domainName, userAddress);
+    await this.setTxHash(sessionId, txHash);
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);
+
+    this.logger.log(
+      `Domain "${domainName}" rented by user "${userAddress}", tx hash: "${txHash}"`,
+    );
   }
 }

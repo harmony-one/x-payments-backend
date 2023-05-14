@@ -18,13 +18,10 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
-  CheckoutAmountResponseDto,
   CheckoutCreateResponseDto,
   CheckoutOneCountryRentDto,
-  CheckoutVideoPayDto,
-  CheckoutVideoPayPriceDto,
   CreateCheckoutSessionDto,
-  SendDonationForDto,
+  OneCountryRentDto,
   StripeCheckoutDto,
 } from './dto/checkout.dto';
 import {
@@ -38,9 +35,10 @@ import { Web3Service } from '../web3/web3.service';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
-  PaymentStatus,
-  StripePaymentEntity,
   CheckoutMethod,
+  PaymentStatus,
+  PaymentType,
+  StripePaymentEntity,
 } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
@@ -59,29 +57,6 @@ export class StripeController {
     private readonly configService: ConfigService,
   ) {}
 
-  @ApiExcludeEndpoint()
-  @Get('/checkout')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createCheckoutSession(
-    @Res() res,
-    @Query() stripeCheckoutDto: StripeCheckoutDto,
-  ) {
-    const session = await this.stripeService.createStripeSession(
-      stripeCheckoutDto,
-    );
-    res.redirect(303, session.url);
-  }
-
-  @ApiExcludeEndpoint()
-  @Post('/create-payment-intent')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentIntent(@Body() dto: CreatePaymentIntentDto) {
-    const paymentIntent = await this.stripeService.createPaymentIntent(dto);
-    return {
-      clientSecret: paymentIntent.client_secret,
-    };
-  }
-
   @Post('/webhook')
   @ApiExcludeEndpoint()
   async stripeWebHook(
@@ -91,12 +66,9 @@ export class StripeController {
     @Body() body,
   ) {
     const { id, type } = body;
-    const verifyEvent = this.configService.get('stripe.verifyWebhookEvent');
-    this.logger.log(
-      `Received Stripe webhook event id: ${id}, type: ${type}. Verify event signature: ${verifyEvent}.`,
-    );
+    this.logger.log(`Received Stripe webhook event id: ${id}, type: ${type}`);
 
-    if (verifyEvent) {
+    if (this.configService.get('stripe.verifyWebhookEvent')) {
       try {
         this.stripeService.verifyWebhookEvent(req.rawBody, signature);
       } catch (e) {
@@ -112,9 +84,11 @@ export class StripeController {
     switch (type) {
       case 'checkout.session.completed': {
         const sessionId = body.data.object.id;
-        this.logger.log(
-          `Stripe request completed, id: ${id}, sessionId: ${sessionId}`,
-        );
+        this.stripeService.handleCheckoutPaymentSuccess(sessionId);
+        break;
+      }
+      case 'payment_intent.succeeded': {
+        const sessionId = body.data.object.id;
         this.stripeService.handleCheckoutPaymentSuccess(sessionId);
         break;
       }
@@ -141,19 +115,9 @@ export class StripeController {
 
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
 
-    const serviceBalance = await this.web3Service.getOneCountryServiceBalance();
-    const amountOne = await this.web3Service.getDomainPriceInOne(params.name);
-    this.logger.log(
-      `Service balance: ${serviceBalance}, domain price: ${amountOne}`,
+    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
+      dto.params.domainName,
     );
-
-    if (serviceBalance <= amountOne) {
-      throw new InternalServerErrorException(
-        `Insufficient funds on service account balance: ${serviceBalance}, required: ${amountOne}. Please contact administrator.`,
-      );
-    }
-
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
 
     const checkoutDto: CreateCheckoutSessionDto = {
       name: '1.country',
@@ -165,6 +129,7 @@ export class StripeController {
     const session = await this.stripeService.createCheckoutSession(checkoutDto);
 
     const paymentDto: CreatePaymentDto = {
+      paymentType: PaymentType.checkout,
       method: CheckoutMethod.rent,
       sessionId: session.id,
       userAddress,
@@ -187,116 +152,58 @@ export class StripeController {
     };
   }
 
-  @Post('/checkout/payForVanityURLAccessFor')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
-  })
+  @Post('/create-payment-intent/one-country/rent')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutVideoPayFor(
-    @Body() dto: CheckoutVideoPayDto,
-  ): Promise<CheckoutCreateResponseDto> {
-    const amountOne = await this.web3Service.getVanityUrlPrice(
-      dto.params.name,
-      dto.params.aliasName,
+  async createPaymentIntentRent(@Body() dto: OneCountryRentDto) {
+    const { userAddress, params } = dto;
+
+    this.logger.log(
+      `oneCountry rent payment intent request: ${JSON.stringify(dto)}`,
     );
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: 'Live video pay',
+
+    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
+      dto.params.domainName,
+    );
+
+    const paymentIntent = await this.stripeService.createPaymentIntent({
       amount: +amountUsd,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.successUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+    });
 
     const paymentDto: CreatePaymentDto = {
-      method: CheckoutMethod.payForVanityURLAccessFor,
-      sessionId: session.id,
-      userAddress: '',
+      paymentType: PaymentType.paymentIntent,
+      method: CheckoutMethod.rent,
+      sessionId: paymentIntent.id,
+      userAddress,
       amountUsd,
       amountOne,
-      params: dto.params,
+      params,
     };
 
     await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
+    return paymentIntent;
   }
 
-  @Post('/checkout/payForVanityURLAccessFor/amount')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutAmountResponseDto,
+  @Get('/validate/rent/:domainName')
+  @ApiParam({
+    name: 'domainName',
+    required: true,
+    description: '1country domain name',
+    schema: { oneOf: [{ type: 'string' }] },
   })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async estimatePayForVideo(@Body() dto: CheckoutVideoPayPriceDto) {
-    const amountOne = await this.web3Service.getVanityUrlPrice(
-      dto.name,
-      dto.aliasName,
-    );
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    return {
-      amountOne,
-      amountUsd,
-    };
-  }
-
-  @Post('/checkout/sendDonationFor')
   @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
+    type: StripePaymentEntity,
   })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async sendDonationFor(
-    @Body() dto: SendDonationForDto,
-  ): Promise<CheckoutCreateResponseDto> {
-    const { amountOne } = dto;
-    const amountUsd = await this.web3Service.getCheckoutUsdAmount(amountOne);
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: 'Live video donation',
-      amount: +amountUsd,
-      successUrl: dto.successUrl,
-      cancelUrl: dto.successUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
-
-    const paymentDto: CreatePaymentDto = {
-      method: CheckoutMethod.sendDonationFor,
-      sessionId: session.id,
-      userAddress: '',
-      amountUsd,
-      amountOne,
-      params: dto.params,
-    };
-
-    await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
+  async validateRent(@Param() params) {
+    const { domainName } = params;
+    const data = await this.web3Service.validateDomainRent(domainName);
+    return data;
   }
 
   @Get('/payment/:sessionId')
   @ApiParam({
     name: 'sessionId',
     required: true,
-    description: 'Stripe sessionId obtained by calling /checkout/ method',
+    description: 'Stripe sessionId',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({

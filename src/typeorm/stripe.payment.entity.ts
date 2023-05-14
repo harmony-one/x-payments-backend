@@ -6,7 +6,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsObject, IsString } from 'class-validator';
+import { IsEnum, IsObject, IsString } from 'class-validator';
+
+export enum PaymentType {
+  checkout = 'checkout',
+  paymentIntent = 'payment_intent',
+}
 
 export enum PaymentStatus {
   pending = 'pending', // Payment was initiated by user
@@ -19,8 +24,6 @@ export enum PaymentStatus {
 
 export enum CheckoutMethod {
   rent = 'rent',
-  payForVanityURLAccessFor = 'payForVanityURLAccessFor',
-  sendDonationFor = 'sendDonationFor',
 }
 
 @Entity({ name: 'stripe_payments' })
@@ -44,6 +47,15 @@ export class StripePaymentEntity {
   method: CheckoutMethod;
 
   @ApiProperty()
+  @IsEnum(PaymentType)
+  @Column({
+    type: 'varchar',
+    enum: PaymentType,
+    default: PaymentType.checkout,
+  })
+  paymentType: PaymentType;
+
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'varchar',
@@ -53,16 +65,25 @@ export class StripePaymentEntity {
   status: PaymentStatus;
 
   @ApiProperty()
-  @IsNumber()
   @Column({
     type: 'varchar',
+    default: '',
+  })
+  txHash: string;
+
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '0',
   })
   amountUsd: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsString()
   @Column({
     type: 'varchar',
+    default: '0',
   })
   amountOne: string;
 
@@ -72,7 +93,7 @@ export class StripePaymentEntity {
     type: 'varchar',
     default: '',
   })
-  userAddress?: string;
+  userAddress: string;
 
   @ApiProperty()
   @IsObject()

@@ -2,12 +2,14 @@ import {
   PaymentStatus,
   StripePaymentEntity,
   CheckoutMethod,
+  PaymentType,
 } from '../../typeorm/stripe.payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePaymentDto {
+  paymentType: PaymentType;
   method: CheckoutMethod;
   sessionId: string;
   amountUsd: string;
