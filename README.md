@@ -7,22 +7,6 @@ Supported contract method:
 ## Payments flow
 <img width="1429" alt="HarmonyPaymentFlow" src="https://user-images.githubusercontent.com/8803471/216304320-79a5dce7-5bd2-4ddb-8653-860f76810163.png">
 
-## Required envs
-`DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
-
-`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange for USD.
-
-`STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
-
-`STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
-
-### Additional envs in production mode:
-`STRIPE_ENDPOINT_SECRET` - to verify webhook event from Stripe
-
-`STRIPE_VERIFY_WEBHOOK_EVENT=true` - enable webhook event verification
-
-More info about verification: https://stripe.com/docs/webhooks/signatures
-
 
 ## Build and deploy
 ### Run locally
@@ -72,3 +56,19 @@ Get "Secret key" and "Publishable key" from Stripe developer page (https://dashb
 flyctl secrets set STRIPE_SECRET_KEY=12345
 flyctl secrets set STRIPE_PUB_KEY=12345
 ```
+
+## envs in production
+`DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
+
+`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange for USD.
+
+`STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
+
+`STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
+
+`STRIPE_ENDPOINT_SECRET` - secret to verify webhook event from Stripe
+
+`STRIPE_VERIFY_WEBHOOK_EVENT=true` - enable webhook event verification
+
+More info about verification: https://stripe.com/docs/webhooks/signatures
+
