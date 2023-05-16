@@ -79,7 +79,7 @@ export class Web3Service {
     };
   }
 
-  async register(domainName: string, ownerAddress: string) {
+  async register(domainName: string, ownerAddress: string): Promise<string> {
     const secret = Math.random().toString(26).slice(2);
     const commitment = await this.dc.makeCommitment(
       domainName,
