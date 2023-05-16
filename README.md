@@ -1,7 +1,7 @@
 ## Harmony Payments Service
-The service allows users to pay for 1.country services with a credit card / Apple Pay / Google Pay.
+Payments Service allows users to pay for 1.country web3 features with credit card / Apple Pay / Google Pay.
 
-Supported contract methods:
+Supported contract method:
 - rent
 
 ## Payments flow
@@ -9,16 +9,16 @@ Supported contract methods:
 
 ## Build and deploy
 ### Run locally
-1) Create .env file and setup env variables using .env.example
-2) Run app:
+1) Copy `.env.example` to `.env`
+2) Run
 ```shell
 npm i
 npm start
 ```
 3) Open Swagger API [http://localhost:3001/api](http://localhost:3001/api)
 
-### How to deploy on fly.io
-1) `flyctl auth login`.
+### First deploy on fly.io
+1) `flyctl auth login`
 
 2) `flyctl launch`, attach Postgres DB 
 
@@ -28,7 +28,7 @@ flyctl secrets set ONE_WALLET_PRIVATE_KEY=0x1234
 flyctl secrets set ONE_COUNTRY_CONTRACT_ADDRESS=0xabcd
 ```
 
-### How to deploy update
+### Update
 `flyctl deploy`
 
 ## Required envs
@@ -59,7 +59,7 @@ payment_intent.succeeded
 3) Confirm
 
 ### Set Stripe secret key
-Copy `Secret key` from dev page (https://dashboard.stripe.com/test/apikeys) and update secret:
+Get "Secret key" and "Publishable key" from Stripe developer page (https://dashboard.stripe.com/test/apikeys):
 ```shell
 flyctl secrets set STRIPE_SECRET_KEY=12345
 flyctl secrets set STRIPE_PUB_KEY=12345
