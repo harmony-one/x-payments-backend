@@ -10,11 +10,18 @@ Supported contract method:
 ## Required envs
 `DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
 
-`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange to USD.
+`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange for USD.
 
 `STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
 
 `STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
+
+### Additional envs in production mode:
+`STRIPE_ENDPOINT_SECRET` - to verify webhook event from Stripe
+
+`STRIPE_VERIFY_WEBHOOK_EVENT=true` - enable webhook event verification
+
+More info about verification: https://stripe.com/docs/webhooks/signatures
 
 
 ## Build and deploy
