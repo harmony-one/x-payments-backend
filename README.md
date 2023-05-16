@@ -7,6 +7,16 @@ Supported contract method:
 ## Payments flow
 <img width="1429" alt="HarmonyPaymentFlow" src="https://user-images.githubusercontent.com/8803471/216304320-79a5dce7-5bd2-4ddb-8653-860f76810163.png">
 
+## Required envs
+`DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
+
+`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange to USD.
+
+`STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
+
+`STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
+
+
 ## Build and deploy
 ### Run locally
 1) Copy `.env.example` to `.env`
@@ -20,7 +30,7 @@ npm start
 ### First deploy on fly.io
 1) `flyctl auth login`
 
-2) `flyctl launch`, attach Postgres DB 
+2) `flyctl launch`, attach Postgres DB: Yes
 
 3) Set envs
 ```shell
@@ -28,17 +38,8 @@ flyctl secrets set ONE_WALLET_PRIVATE_KEY=0x1234
 flyctl secrets set ONE_COUNTRY_CONTRACT_ADDRESS=0xabcd
 ```
 
-### Update
+### Deploy an update
 `flyctl deploy`
-
-## Required envs
-`DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
-
-`ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange to USD.
-
-`STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
-
-`STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
 
 ## Connect Stripe
 ### Setup webhooks
