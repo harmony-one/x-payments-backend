@@ -1,21 +1,24 @@
-# fly.toml file generated for stripe-payments-backend on 2023-01-10T08:04:09Z
+# fly.toml app configuration file generated for harmony-payments-service on 2023-05-16T10:30:37+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "stripe-payments-backend"
+app = "harmony-payments-service"
 kill_signal = "SIGINT"
 kill_timeout = 5
+primary_region = "mad"
 processes = []
 
 [build]
-  image = "artemkolodko/stripe-payments-backend"
 
 [env]
-  DB_NAME = "stripe_db"
+  DB_NAME = "harmony_payments_service"
+  DB_PORT = "5432"
   DB_USERNAME = "postgres"
-  DB_PORT = "5433"
-  CLIENT_URL = "https://stripefront.demos.country"
+  ONE_COUNTRY_CONTRACT_ADDRESS = "0x547942748Cc8840FEc23daFdD01E6457379B446D"
   RPC_URL = "https://api.s0.t.hmny.io"
-  ONE_COUNTRY_CONTRACT_ADDRESS = "0x3cc3c5f98ac3ff544279919dfcebfb7afe03a2ca"
-  VIDEO_REELS_CONTRACT_ADDRESS = "0x9c125e45d2d9e7152e7dabc4edd7e063bc27708a"
+  PORT = "8080"
+  API_KEY = ""
 
 [experimental]
   allowed_public_ports = []
