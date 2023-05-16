@@ -18,6 +18,7 @@ processes = []
   ONE_COUNTRY_CONTRACT_ADDRESS = "0x547942748Cc8840FEc23daFdD01E6457379B446D"
   RPC_URL = "https://api.s0.t.hmny.io"
   PORT = "8080"
+  API_KEY = ""
 
 [experimental]
   allowed_public_ports = []
