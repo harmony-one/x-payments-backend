@@ -5,7 +5,7 @@ import {
   PaymentType,
 } from '../../typeorm/stripe.payment.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePaymentDto {
@@ -19,6 +19,11 @@ export class CreatePaymentDto {
 }
 
 export class ListAllPaymentsDto {
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
+
   @ApiProperty({
     type: CheckoutMethod,
     enum: CheckoutMethod,
@@ -26,7 +31,16 @@ export class ListAllPaymentsDto {
   })
   @IsEnum(CheckoutMethod)
   @IsOptional()
-  opType?: CheckoutMethod;
+  method?: CheckoutMethod;
+
+  @ApiProperty({
+    type: PaymentType,
+    enum: PaymentType,
+    required: false,
+  })
+  @IsEnum(PaymentType)
+  @IsOptional()
+  paymentType?: PaymentType;
 
   @ApiProperty({
     type: PaymentStatus,
@@ -40,12 +54,17 @@ export class ListAllPaymentsDto {
   @ApiProperty({ type: String, required: false })
   @IsOptional()
   @IsString()
-  sessionId?: string;
+  txHash?: string;
 
-  @ApiProperty({ type: Number, required: false })
+  @ApiProperty({ type: String, required: false })
   @IsOptional()
-  @IsNumber()
-  amount?: number;
+  @IsString()
+  amountUsd?: string;
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsString()
+  amountOne?: string;
 
   @ApiProperty({ type: String, required: false })
   @IsOptional()
@@ -57,7 +76,7 @@ export class ListAllPaymentsDto {
   @Type(() => Number)
   offset?: number;
 
-  @ApiProperty({ type: Number, required: false, default: 10 })
+  @ApiProperty({ type: Number, required: false, default: 100 })
   @IsOptional()
   @Type(() => Number)
   limit?: number;
