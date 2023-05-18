@@ -28,7 +28,8 @@ export class AppController {
         oneCountryContractAddress: this.configService.get(
           'web3.oneCountryContractAddress',
         ),
-        txConfirmTimeout: this.configService.get('web3.txConfirmTimeout'),
+        userRefillAmountOne: this.configService.get('web3.userRefillAmountOne'),
+        serviceFeePercent: this.configService.get('web3.serviceFeePercent'),
       },
     };
   }
