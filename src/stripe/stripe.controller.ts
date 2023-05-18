@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Headers,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
   Param,
@@ -22,7 +21,6 @@ import {
   CheckoutOneCountryRentDto,
   CreateCheckoutSessionDto,
   OneCountryRentDto,
-  StripeCheckoutDto,
 } from './dto/checkout.dto';
 import {
   ApiExcludeEndpoint,
@@ -32,7 +30,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Web3Service } from '../web3/web3.service';
-import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { ConfigService } from '@nestjs/config';
 import {
   CheckoutMethod,
@@ -158,7 +155,7 @@ export class StripeController {
     const { userAddress, params } = dto;
 
     this.logger.log(
-      `oneCountry rent payment intent request: ${JSON.stringify(dto)}`,
+      `Received create payment intent request: ${JSON.stringify(dto)}`,
     );
 
     const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(

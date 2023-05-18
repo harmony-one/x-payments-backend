@@ -36,7 +36,8 @@
     "stripe": "^11.5.0",
     "typeorm": "^0.3.11",
     "uuid": "^9.0.0",
-    "web3": "^1.8.1"
+    "web3": "^1.8.1",
+    "web3-utils": "^1.10.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import {
-  CreateCheckoutSessionDto,
-  StripeCheckoutDto,
-} from './dto/checkout.dto';
+import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import { DataSource } from 'typeorm';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
@@ -197,6 +194,12 @@ export class StripeService {
 
     const txHash = await this.web3Service.register(domainName, userAddress);
     await this.setTxHash(sessionId, txHash);
+
+    const userRefillAmount = this.configService.get('web3.userRefillAmountOne');
+    if (userRefillAmount > 0) {
+      await this.web3Service.sendOneToAddress(userAddress, userRefillAmount);
+    }
+
     await this.setPaymentStatus(sessionId, PaymentStatus.completed);
 
     this.logger.log(

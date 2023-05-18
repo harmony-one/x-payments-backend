@@ -1,26 +1,45 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DCEns } from 'one-country-sdk';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3 = require('web3');
+import { toBN } from 'web3-utils';
 
 @Injectable()
 export class Web3Service {
   private dc: DCEns;
+  private web3;
+  private readonly serviceAddress: string;
+  private readonly logger = new Logger(Web3Service.name);
   constructor(
     private configService: ConfigService,
     private readonly httpService: HttpService,
   ) {
-    const provider = new Web3.providers.HttpProvider(
-      configService.get('web3.rpcUrl'),
-    );
+    const RPCUrl = this.configService.get('web3.rpcUrl');
+    const privateKey = this.configService.get('web3.oneWalletPrivateKey');
+
+    const provider = new Web3.providers.HttpProvider(RPCUrl);
     this.dc = new DCEns({
       provider,
       contractAddress: configService.get('web3.oneCountryContractAddress'),
       privateKey: configService.get('web3.oneWalletPrivateKey'),
     });
+
+    this.web3 = new Web3(provider);
+
+    if (privateKey) {
+      const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
+      this.web3.eth.accounts.wallet.add(account);
+      this.serviceAddress = account.address;
+    } else {
+      this.logger.error('Web3 service created without private key');
+    }
   }
 
   // CoinGecko Free plan API https://www.coingecko.com/en/api/documentation
@@ -39,12 +58,23 @@ export class Web3Service {
   }
 
   async getDomainPriceInOne(name: string) {
-    const price = await this.dc.getPrice(name);
-    return price.amount;
-  }
+    const serviceFee = this.configService.get('web3.serviceFeePercent');
+    const userRefillAmount = this.configService.get('web3.userRefillAmountOne');
 
-  getOneCountryAccountAddress() {
-    return this.dc.accountAddress;
+    const price = await this.dc.getPrice(name);
+    let amountOne = price.amount;
+
+    if (serviceFee > 0) {
+      const amountOneBn = toBN(amountOne);
+      const additionalValue = amountOneBn.mul(toBN(serviceFee)).div(toBN(100));
+      amountOne = amountOneBn.add(additionalValue).toString();
+    }
+
+    if (userRefillAmount > 0) {
+      amountOne = toBN(amountOne).add(toBN(1)).toString();
+    }
+
+    return amountOne.toString();
   }
 
   async getCheckoutUsdAmount(amountOne: string): Promise<string> {
@@ -65,8 +95,9 @@ export class Web3Service {
   async validateDomainRent(domainName: string) {
     const serviceBalance = await this.getOneCountryServiceBalance();
     const amountOne = await this.getDomainPriceInOne(domainName);
-    const balanceDelta = +serviceBalance - +amountOne;
-    if (balanceDelta <= 0) {
+    const balanceDelta = toBN(serviceBalance).sub(toBN(amountOne));
+
+    if (balanceDelta <= toBN('1')) {
       throw new InternalServerErrorException(
         `Insufficient funds to rent domain "${domainName}": required: ${amountOne}, on service balance: ${serviceBalance}`,
       );
@@ -93,12 +124,23 @@ export class Web3Service {
   }
 
   async getAddressBalance(address: string) {
-    const web3 = new Web3(this.configService.get('web3.rpcUrl'));
-    return await web3.eth.getBalance(address);
+    return await this.web3.eth.getBalance(address);
     // return web3.utils.toWei(balance);
   }
 
   async getOneCountryServiceBalance() {
     return await this.getAddressBalance(this.dc.accountAddress);
+  }
+
+  async sendOneToAddress(userAddress: string, amountOne: string) {
+    const gasPrice = await this.web3.eth.getGasPrice();
+    const res = await this.web3.eth.sendTransaction({
+      to: userAddress,
+      from: this.serviceAddress,
+      value: this.web3.utils.toHex(this.web3.utils.toWei(amountOne, 'ether')),
+      gasPrice,
+      gas: this.web3.utils.toHex(35000),
+    });
+    return res;
   }
 }
