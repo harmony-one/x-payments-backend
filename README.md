@@ -76,9 +76,9 @@ https://payments-api.fly.dev/api#/
 
 `ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange for USD.
 
-`STRIPE_PUB_KEY` - "Secret key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
+`STRIPE_PUB_KEY` - "Publishable key" from Stripe developer dashboard (https://dashboard.stripe.com/test/apikeys)
 
-`STRIPE_SECRET_KEY` - "Publishable key" from Stripe developer dashboard
+`STRIPE_SECRET_KEY` - "Secret key" from Stripe developer dashboard
 
 `STRIPE_ENDPOINT_SECRET` - secret to verify webhook event from Stripe
 
