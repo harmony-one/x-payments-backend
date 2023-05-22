@@ -1,51 +1,40 @@
-# fly.toml app configuration file generated for harmony-payments-service on 2023-05-16T10:30:37+01:00
+# fly.toml app configuration file generated for payments-api on 2023-05-22T16:48:04+01:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "harmony-payments-service"
-kill_signal = "SIGINT"
-kill_timeout = 5
+app = "payments-api"
 primary_region = "mad"
-processes = []
-
-[build]
-
-[env]
-  DB_NAME = "harmony_payments_service"
-  DB_PORT = "5432"
-  DB_USERNAME = "postgres"
-  ONE_COUNTRY_CONTRACT_ADDRESS = "0x547942748Cc8840FEc23daFdD01E6457379B446D"
-  RPC_URL = "https://api.s0.t.hmny.io"
-  PORT = "8080"
-  API_KEY = ""
+kill_signal = "SIGINT"
+kill_timeout = "5s"
 
 [experimental]
-  allowed_public_ports = []
   auto_rollback = true
 
+[env]
+  API_KEY = ""
+  PORT = "8080"
+
 [[services]]
-  http_checks = []
+  protocol = "tcp"
   internal_port = 8080
   processes = ["app"]
-  protocol = "tcp"
-  script_checks = []
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
   [services.concurrency]
+    type = "connections"
     hard_limit = 25
     soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    force_https = true
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
 
   [[services.tcp_checks]]
-    grace_period = "1s"
     interval = "15s"
-    restart_limit = 0
     timeout = "2s"
+    grace_period = "1s"
+    restart_limit = 0
