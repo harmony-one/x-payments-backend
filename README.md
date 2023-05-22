@@ -18,20 +18,6 @@ npm start
 ```
 3) Open Swagger API [http://localhost:3001/api](http://localhost:3001/api)
 
-### First deploy on fly.io
-1) `flyctl auth login`
-
-2) `flyctl launch`, attach Postgres DB: Yes
-
-3) Set envs
-```shell
-flyctl secrets set ONE_WALLET_PRIVATE_KEY=0x1234
-flyctl secrets set ONE_COUNTRY_CONTRACT_ADDRESS=0xabcd
-```
-
-### Deploy an update
-`flyctl deploy`
-
 ## Production deploy
 ### Step 1
 Login into Stripe account, get values for Payments backend:
@@ -85,7 +71,7 @@ Check app running (you should see Swagger API):
 https://payments-api.fly.dev/api#/
 
 
-## envs in production
+### production envs
 `DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
 
 `ONE_WALLET_PRIVATE_KEY` - Private key of ONE tokens holder. This account will pay for domains purchase in exchange for USD.
