@@ -18,7 +18,7 @@ npm start
 ```
 3) Open Swagger API [http://localhost:3001/api](http://localhost:3001/api)
 
-## Production deploy
+## Production setup
 ### Step 1
 Login into Stripe account, get values for Payments backend:
 
