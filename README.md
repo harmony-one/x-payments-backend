@@ -63,7 +63,7 @@ flyctl secrets set STRIPE_ENDPOINT_SECRET=123
 Add service account private key.
 It should contain enough tokens to call rent methods.
 ```
-ONE_WALLET_PRIVATE_KEY
+flyctl secrets set ONE_WALLET_PRIVATE_KEY=0x123
 ```
 
 ### Step 4
