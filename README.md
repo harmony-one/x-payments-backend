@@ -32,30 +32,58 @@ flyctl secrets set ONE_COUNTRY_CONTRACT_ADDRESS=0xabcd
 ### Deploy an update
 `flyctl deploy`
 
-## Connect Stripe
-### Setup webhooks
-Create endpoint on Stripe webhooks page: https://dashboard.stripe.com/test/webhooks/create
+## Production deploy
+### Step 1
+Login into Stripe account, get values for Payments backend:
 
-1) Add endpoint url: `https://<SERVICE_URL>/stripe/webhook`
+```
+STRIPE_PUB_KEY
+STRIPE_SECRET_KEY
+STRIPE_ENDPOINT_SECRET
+```
 
-2) Select events:
-```shell
+To get endpoint secret, create Stripe webhook:
+
+Webhook url:
+https://payments-api.fly.dev/stripe/webhook
+
+Listen for events:
+```
 checkout.session.completed
 checkout.session.expired
-payment_intent.canceled
 payment_intent.created
 payment_intent.processing
 payment_intent.succeeded
 ```
 
-3) Confirm
+### Step 2
+Login on fly.io
 
-### Set Stripe secret key
-Get "Secret key" and "Publishable key" from Stripe developer page (https://dashboard.stripe.com/test/apikeys):
-```shell
-flyctl secrets set STRIPE_SECRET_KEY=12345
-flyctl secrets set STRIPE_PUB_KEY=12345
+Install fly.io cli
+
 ```
+brew install flyctl
+flyctl auth login
+```
+
+### Step 3
+Set secrets from the first step:
+```shell
+flyctl secrets set STRIPE_PUB_KEY=123
+flyctl secrets set STRIPE_SECRET_KEY=123
+flyctl secrets set STRIPE_ENDPOINT_SECRET=123
+```
+
+Add service account private key.
+It should contain enough tokens to call rent methods.
+```
+ONE_WALLET_PRIVATE_KEY
+```
+
+### Step 4
+Check app running (you should see Swagger API):
+https://payments-api.fly.dev/api#/
+
 
 ## envs in production
 `DATABASE_URL`: db connect URI. Example: postgres://postgres:@<db_service_name>:5432
