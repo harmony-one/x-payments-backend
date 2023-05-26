@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -93,6 +94,12 @@ export class Web3Service {
   }
 
   async validateDomainRent(domainName: string) {
+    const isAvailable = await this.dc.isAvailable(domainName);
+
+    if (!isAvailable) {
+      throw new BadRequestException('Domain not available');
+    }
+
     const serviceBalance = await this.getOneCountryServiceBalance();
     const amountOne = await this.getDomainPriceInOne(domainName);
     const balanceDelta = toBN(serviceBalance).sub(toBN(amountOne));
