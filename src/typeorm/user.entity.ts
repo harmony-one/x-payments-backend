@@ -22,6 +22,7 @@ export class UserEntity {
   @Column({
     type: 'varchar',
     enum: AppName,
+    default: AppName.telegram,
   })
   appName: AppName;
 

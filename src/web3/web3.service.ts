@@ -135,6 +135,12 @@ export class Web3Service {
     // return web3.utils.toWei(balance);
   }
 
+  async convertOneToUsd(amountOne: string) {
+    const oneRate = await this.getTokenPrice('harmony');
+    const value = (oneRate * +amountOne) / Math.pow(10, 18);
+    return Math.ceil(value * 100).toString();
+  }
+
   async getOneCountryServiceBalance() {
     return await this.getAddressBalance(this.dc.accountAddress);
   }
@@ -149,5 +155,9 @@ export class Web3Service {
       gas: this.web3.utils.toHex(35000),
     });
     return res;
+  }
+
+  createAccount() {
+    return this.web3.eth.accounts.create();
   }
 }

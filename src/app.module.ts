@@ -12,6 +12,7 @@ import entities from './typeorm';
 import { Web3Service } from './web3/web3.service';
 import { Web3Controller } from './web3/web3.controller';
 import { HttpModule } from '@nestjs/axios';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { HttpModule } from '@nestjs/axios';
     Web3Module,
     HttpModule,
     ScheduleModule.forRoot(),
+    UserModule,
   ],
   controllers: [AppController, StripeController, Web3Controller],
   providers: [AppService, StripeService, Web3Service],
