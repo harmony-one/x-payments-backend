@@ -7,13 +7,15 @@ import {
   Param,
   Post,
   UsePipes,
-  ValidationPipe
-} from "@nestjs/common";
+  ValidationPipe,
+} from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { StripePaymentEntity } from '../typeorm';
 import { Web3Service } from '../web3/web3.service';
 import { UserService } from './user.service';
-import { CreateUserDto, CreateUserResponseDto } from "./dto/create.user.dto";
+import { CreateUserDto } from './dto/create.user.dto';
+import { WithdrawFundsDto } from './dto/withdraw.dto';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('user')
 @Controller('user')
@@ -21,6 +23,7 @@ export class UserController {
   constructor(
     private readonly web3Service: Web3Service,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('/:userId')
@@ -79,10 +82,6 @@ export class UserController {
   }
 
   @Post('/create')
-  @ApiOkResponse({
-    description: 'Create new user',
-    type: CreateUserResponseDto,
-  })
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CreateUserDto) {
     const { userId } = dto;
@@ -94,5 +93,31 @@ export class UserController {
 
     const { privateKey, ...rest } = await this.userService.createUser(dto);
     return { ...rest };
+  }
+
+  @Post('/withdraw')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async withdrawFunds(@Body() dto: WithdrawFundsDto) {
+    const { userId, amountOne } = dto;
+
+    const user = await this.userService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const balance = await this.web3Service.getAddressBalance(user.userAddress);
+    if (BigInt(balance) - BigInt(amountOne) < 0) {
+      throw new BadRequestException('Insufficient funds');
+    }
+
+    const oneHolderAddress = this.configService.get(
+      'telegram.tokensHolderAddress',
+    );
+
+    return await this.web3Service.transferOne(
+      user.privateKey,
+      oneHolderAddress,
+      amountOne,
+    );
   }
 }

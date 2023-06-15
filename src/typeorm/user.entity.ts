@@ -12,7 +12,7 @@ export enum AppName {
   telegram = 'telegram',
 }
 
-@Entity({ name: 'user' })
+@Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -48,9 +48,9 @@ export class UserEntity {
   })
   privateKey: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }
