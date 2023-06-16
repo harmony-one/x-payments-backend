@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -18,9 +19,10 @@ import { CreateUserDto } from './dto/create.user.dto';
 import { WithdrawFundsDto } from './dto/withdraw.dto';
 import { ConfigService } from '@nestjs/config';
 import { BotApiKeyGuard } from '../auth/ApiKeyGuard';
+import { GetUserPaymentsDto } from './dto/payments.dto';
 
-@ApiTags('user')
-@Controller('user')
+@ApiTags('users')
+@Controller('users')
 export class UserController {
   constructor(
     private readonly web3Service: Web3Service,
@@ -28,7 +30,7 @@ export class UserController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Get('/:userId')
+  @Get('/id/:userId')
   @ApiParam({
     name: 'userId',
     required: true,
@@ -97,7 +99,7 @@ export class UserController {
     return { ...rest };
   }
 
-  @Post('/withdraw')
+  @Post('/pay')
   @UsePipes(new ValidationPipe({ transform: true }))
   @UseGuards(BotApiKeyGuard)
   async withdrawFunds(@Body() dto: WithdrawFundsDto) {
@@ -137,5 +139,16 @@ export class UserController {
       transferData.transactionHash,
     );
     return payment;
+  }
+
+  @Get('/payments')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  // @ApiOkResponse({
+  //   type: ListAllPaymentsResponseDto,
+  // })
+  async getPayments(@Query() dto: GetUserPaymentsDto) {
+    console.log('getPayments', dto)
+    const data = await this.userService.getPayments(dto);
+    return data;
   }
 }
