@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 import { WithdrawFundsDto } from './dto/withdraw.dto';
 import { ConfigService } from '@nestjs/config';
+import { BotApiKeyGuard } from '../auth/ApiKeyGuard';
 
 @ApiTags('user')
 @Controller('user')
@@ -97,6 +99,7 @@ export class UserController {
 
   @Post('/withdraw')
   @UsePipes(new ValidationPipe({ transform: true }))
+  @UseGuards(BotApiKeyGuard)
   async withdrawFunds(@Body() dto: WithdrawFundsDto) {
     const { userId, amountUsd } = dto;
 
