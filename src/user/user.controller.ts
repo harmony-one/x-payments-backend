@@ -143,11 +143,7 @@ export class UserController {
 
   @Get('/payments')
   @UsePipes(new ValidationPipe({ transform: true }))
-  // @ApiOkResponse({
-  //   type: ListAllPaymentsResponseDto,
-  // })
   async getPayments(@Query() dto: GetUserPaymentsDto) {
-    console.log('getPayments', dto)
     const data = await this.userService.getPayments(dto);
     return data;
   }
