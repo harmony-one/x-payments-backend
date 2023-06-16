@@ -54,3 +54,37 @@ export class UserEntity {
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }
+
+@Entity({ name: 'user_payments' })
+export class UserPaymentEntity {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @ApiProperty()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  userId: string;
+
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '0',
+  })
+  amount: string;
+
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  txHash: string;
+
+  @CreateDateColumn({ name: 'createdAt' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updatedAt' })
+  updatedAt: Date;
+}
+

@@ -8,5 +8,5 @@ export class WithdrawFundsDto {
 
   @ApiProperty()
   @IsString()
-  amountOne: string;
+  amountUsd: string;
 }

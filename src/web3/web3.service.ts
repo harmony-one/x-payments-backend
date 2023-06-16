@@ -135,10 +135,16 @@ export class Web3Service {
     // return web3.utils.toWei(balance);
   }
 
-  async convertOneToUsd(amountOne: string) {
+  async convertOneToUsd(amount: string) {
     const oneRate = await this.getTokenPrice('harmony');
-    const value = (oneRate * +amountOne) / Math.pow(10, 18);
-    return value.toFixed(2).toString();
+    const value = (oneRate * +amount) / Math.pow(10, 18);
+    return value.toFixed(2);
+  }
+
+  async convertUsdToOne(amount: string) {
+    const oneRate = await this.getTokenPrice('harmony');
+    const value = (+amount * Math.pow(10, 18)) / oneRate;
+    return value.toString();
   }
 
   async getOneCountryServiceBalance() {
@@ -169,7 +175,7 @@ export class Web3Service {
     const res = await web3.eth.sendTransaction({
       to: receiverAddress,
       from: account.address,
-      value: this.web3.utils.toHex(web3.utils.toWei(amount, 'ether')),
+      value: web3.utils.toHex(web3.utils.toWei(amount, 'wei')),
       gasPrice,
       gas: web3.utils.toHex(35000),
     });

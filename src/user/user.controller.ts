@@ -98,26 +98,41 @@ export class UserController {
   @Post('/withdraw')
   @UsePipes(new ValidationPipe({ transform: true }))
   async withdrawFunds(@Body() dto: WithdrawFundsDto) {
-    const { userId, amountOne } = dto;
+    const { userId, amountUsd } = dto;
 
     const user = await this.userService.getUserById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    const amountOne = await this.web3Service.convertUsdToOne(amountUsd);
+
     const balance = await this.web3Service.getAddressBalance(user.userAddress);
-    if (BigInt(balance) - BigInt(amountOne) < 0) {
+    if (+balance - 0.01 - +amountOne < 0) {
       throw new BadRequestException('Insufficient funds');
     }
 
-    const oneHolderAddress = this.configService.get(
-      'telegram.tokensHolderAddress',
+    const botHolderAddress = this.configService.get(
+      'telegram.botHolderAddress',
     );
 
-    return await this.web3Service.transferOne(
+    if (!botHolderAddress.startsWith('0x')) {
+      throw new BadRequestException(
+        'Bot tokens holder address not configured on service side',
+      );
+    }
+
+    const transferData = await this.web3Service.transferOne(
       user.privateKey,
-      oneHolderAddress,
+      botHolderAddress,
       amountOne,
     );
+
+    const payment = await this.userService.createUserPayment(
+      dto,
+      amountOne,
+      transferData.transactionHash,
+    );
+    return payment;
   }
 }

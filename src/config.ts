@@ -27,6 +27,6 @@ export default () => ({
   },
   telegram: {
     botApiKey: process.env.TG_BOT_API_KEY || '',
-    tokensHolderAddress: process.env.TG_BOT_HOLDER_ADDRESS || '',
+    botHolderAddress: process.env.TG_BOT_HOLDER_ADDRESS || '',
   },
 });
