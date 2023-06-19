@@ -2,6 +2,9 @@ import * as process from 'process';
 
 export default () => ({
   apiKey: process.env.API_KEY || '',
+  version: process.env.npm_package_version || '0.0.1',
+  name: process.env.npm_package_name || '',
+  port: parseInt(process.env.PORT, 10) || 8080,
   stripe: {
     publishableKey: process.env.STRIPE_PUB_KEY || '',
     secretKey: process.env.STRIPE_SECRET_KEY || '',
@@ -22,7 +25,8 @@ export default () => ({
     userRefillAmountOne: process.env.USER_REFILL_AMOUNT_ONE || '1',
     serviceFeePercent: process.env.SERVICE_FEE_PERCENT || '30', // in %
   },
-  version: process.env.npm_package_version || '0.0.1',
-  name: process.env.npm_package_name || '',
-  port: parseInt(process.env.PORT, 10) || 8080,
+  telegram: {
+    botApiKey: process.env.TG_BOT_API_KEY || '',
+    botHolderAddress: process.env.TG_BOT_HOLDER_ADDRESS || '',
+  },
 });

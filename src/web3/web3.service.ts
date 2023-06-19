@@ -135,6 +135,18 @@ export class Web3Service {
     // return web3.utils.toWei(balance);
   }
 
+  async convertOneToUsd(amount: string) {
+    const oneRate = await this.getTokenPrice('harmony');
+    const value = (oneRate * +amount) / Math.pow(10, 18);
+    return value.toFixed(2);
+  }
+
+  async convertUsdToOne(amount: string) {
+    const oneRate = await this.getTokenPrice('harmony');
+    const value = (+amount * Math.pow(10, 18)) / oneRate;
+    return value.toString();
+  }
+
   async getOneCountryServiceBalance() {
     return await this.getAddressBalance(this.dc.accountAddress);
   }
@@ -149,5 +161,28 @@ export class Web3Service {
       gas: this.web3.utils.toHex(35000),
     });
     return res;
+  }
+
+  async transferOne(senderPk: string, receiverAddress: string, amount: string) {
+    const provider = new Web3.providers.HttpProvider(
+      this.configService.get('web3.rpcUrl'),
+    );
+    const web3 = new Web3(provider);
+    const account = web3.eth.accounts.privateKeyToAccount(senderPk);
+    web3.eth.accounts.wallet.add(account);
+
+    const gasPrice = await web3.eth.getGasPrice();
+    const res = await web3.eth.sendTransaction({
+      to: receiverAddress,
+      from: account.address,
+      value: web3.utils.toHex(web3.utils.toWei(amount, 'wei')),
+      gasPrice,
+      gas: web3.utils.toHex(35000),
+    });
+    return res;
+  }
+
+  createAccount() {
+    return this.web3.eth.accounts.create();
   }
 }
