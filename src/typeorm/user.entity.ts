@@ -10,12 +10,25 @@ import { IsEnum, IsString } from 'class-validator';
 
 export enum AppName {
   telegram = 'telegram',
+  discord = 'discord',
 }
 
+export enum UserType {
+  single = 'single',
+  group = 'group',
+  server = 'server',
+}
 @Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @ApiProperty()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  userId: string;
 
   @ApiProperty()
   @IsEnum(AppName)
@@ -27,11 +40,21 @@ export class UserEntity {
   appName: AppName;
 
   @ApiProperty()
+  @IsEnum(UserType)
+  @Column({
+    type: 'varchar',
+    enum: UserType,
+    default: UserType.single,
+  })
+  userType: UserType;
+
+  @ApiProperty()
+  @IsString()
   @Column({
     type: 'varchar',
     default: '',
   })
-  userId: string;
+  customerId: string;
 
   @ApiProperty()
   @IsString()
@@ -87,4 +110,3 @@ export class UserPaymentEntity {
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }
-

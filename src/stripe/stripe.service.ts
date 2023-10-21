@@ -15,6 +15,8 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { Web3Service } from '../web3/web3.service';
+import { CreateUserDto } from 'src/user/dto/create.user.dto';
+import { AppName, UserType } from 'src/typeorm/user.entity';
 
 @Injectable()
 export class StripeService {
@@ -30,9 +32,26 @@ export class StripeService {
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
 
+  async createCustomer(dto: CreateUserDto) {
+    const {
+      userId,
+      appName = AppName.telegram,
+      userType = UserType.single,
+    } = dto;
+    const params: Stripe.CustomerCreateParams = {
+      metadata: {
+        userId,
+        appName,
+        userType,
+      },
+    };
+    const customer = await this.stripe.customers.create(params);
+    return customer;
+  }
+
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const {
-      name,
+      name = 'test',
       description = '',
       currency = 'usd',
       amount,
@@ -40,14 +59,14 @@ export class StripeService {
       successUrl,
       cancelUrl,
     } = dto;
-
     const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
       line_items: [
         {
           quantity,
           price_data: {
             currency,
-            unit_amount: amount, // amount in USD cents
+            unit_amount: amount * 100, // amount in USD cents
             product_data: {
               name,
               // description,
@@ -60,7 +79,7 @@ export class StripeService {
       success_url: successUrl,
       cancel_url: cancelUrl,
     });
-
+    console.log('session', session);
     return session;
   }
 

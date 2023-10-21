@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
+  CheckoutAmountResponseDto,
   CheckoutCreateResponseDto,
   CheckoutOneCountryRentDto,
   CreateCheckoutSessionDto,
@@ -101,6 +102,55 @@ export class StripeController {
     res.json({ received: true });
   }
 
+  @Post('/checkout/subscription')
+  @ApiOkResponse({
+    description: 'Stripe session params',
+    type: CheckoutAmountResponseDto,
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async checkoutFiatSubscription(@Body() dto: CreateCheckoutSessionDto) {
+    const { amount, successUrl, cancelUrl } = dto;
+
+    this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
+
+    // const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
+    //   dto.params.domainName,
+    // );
+
+    const checkoutDto: CreateCheckoutSessionDto = {
+      name: '1.country',
+      // description: `Rent domain: ${dto.params.name}.1.country`,
+      amount: amount,
+      successUrl,
+      cancelUrl,
+    };
+    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+
+    const paymentDto: CreatePaymentDto = {
+      paymentType: PaymentType.checkout,
+      method: CheckoutMethod.rent,
+      sessionId: session.id,
+      userAddress: '',
+      amountUsd: `${amount}`,
+      amountOne: '',
+      params: {},
+    };
+
+    await this.stripeService.savePayment(paymentDto);
+
+    this.logger.log(
+      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
+    );
+    // return redirect(session.url, code=303)
+    return {
+      url: session.url,
+      amountUsd: amount,
+      amountOne: 0,
+      // sessionId: session.id,
+      // paymentUrl: session.url,
+    };
+  }
+
   @Post('/checkout/one-country/rent')
   @ApiOkResponse({
     description: 'Stripe session params',
@@ -147,6 +197,16 @@ export class StripeController {
       sessionId: session.id,
       paymentUrl: session.url,
     };
+  }
+
+  @Get('/checkout/success')
+  async getSuccess(): Promise<string> {
+    return 'SUCCESS';
+  }
+
+  @Get('/checkout/cancel')
+  async getCancel(): Promise<string> {
+    return 'CANCEL';
   }
 
   @Post('/create-payment-intent/one-country/rent')

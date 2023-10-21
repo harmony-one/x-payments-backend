@@ -128,12 +128,18 @@ export class CreateCheckoutSessionDto {
   description?;
 
   @IsOptional()
+  userId?;
+
+  @IsOptional()
   currency?;
 
   amount: number;
 
   @IsOptional()
   quantity?;
+
+  @IsOptional()
+  url?;
 
   successUrl: string;
 
