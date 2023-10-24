@@ -1,7 +1,21 @@
 import { StripePaymentEntity } from './stripe.payment.entity';
-import { UserEntity, UserPaymentEntity } from './user.entity';
+import {
+  UserEntity,
+  UserPaymentEntity,
+  UserSubscriptionEntity,
+} from './user.entity';
 
-const entities = [StripePaymentEntity, UserEntity, UserPaymentEntity];
+const entities = [
+  StripePaymentEntity,
+  UserEntity,
+  UserPaymentEntity,
+  UserSubscriptionEntity,
+];
 
-export { StripePaymentEntity, UserEntity, UserPaymentEntity };
+export {
+  StripePaymentEntity,
+  UserEntity,
+  UserPaymentEntity,
+  UserSubscriptionEntity,
+};
 export default entities;

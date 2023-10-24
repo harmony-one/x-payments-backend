@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -44,6 +45,7 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
+import { SubscriberStatus } from 'src/typeorm/user.entity';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -102,6 +104,29 @@ export class StripeController {
     res.json({ received: true });
   }
 
+  @Get('/checkout/subscription/:userId')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'UserId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async getActiveSubscription(@Param() params): Promise<any> {
+    const { userId } = params;
+    if (userId) {
+      const subscription = await this.stripeService.getActiveSubscription(
+        userId,
+      );
+      if (subscription) {
+        return subscription;
+      } else {
+        throw new NotFoundException('Subscription not found');
+      }
+    } else {
+      throw new BadRequestException('Missing sessionId argument');
+    }
+  }
+
   @Post('/checkout/subscription')
   @ApiOkResponse({
     description: 'Stripe session params',
@@ -109,7 +134,7 @@ export class StripeController {
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutFiatSubscription(@Body() dto: CreateCheckoutSessionDto) {
-    const { amount, successUrl, cancelUrl } = dto;
+    const { amount, customer, successUrl, cancelUrl, userId } = dto;
 
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
 
@@ -118,13 +143,15 @@ export class StripeController {
     // );
 
     const checkoutDto: CreateCheckoutSessionDto = {
+      mode: 'subscription',
       name: '1.country',
+      customer: customer,
       // description: `Rent domain: ${dto.params.name}.1.country`,
       amount: amount,
-      successUrl,
+      successUrl: successUrl + `/${userId}/{CHECKOUT_SESSION_ID}`,
       cancelUrl,
     };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
+    const session = await this.stripeService.createCheckoutSession(checkoutDto); // checkoutDto);
 
     const paymentDto: CreatePaymentDto = {
       paymentType: PaymentType.checkout,
@@ -199,9 +226,40 @@ export class StripeController {
     };
   }
 
-  @Get('/checkout/success')
-  async getSuccess(): Promise<string> {
-    return 'SUCCESS';
+  @Get('/checkout/success/:userId/:sessionId')
+  @ApiParam({
+    name: 'sessionId',
+    required: true,
+    description: 'Stripe sessionId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'UserId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async getSuccess(@Param() params): Promise<string> {
+    const { sessionId, userId } = params;
+    if (sessionId) {
+      const subscription = await this.stripeService.getSubscriptionBySessionId(
+        sessionId,
+      );
+      if (subscription) {
+        await this.stripeService.saveSubscription({
+          userId: userId,
+          customerId: subscription.customer.toString(),
+          priceId: subscription.items.data[0].price.id,
+          subscriptionId: subscription.id,
+          status: SubscriberStatus.active,
+        });
+        return '<html><body><h1>Thanks for your order</h1></body></html>';
+      } else {
+        throw new NotFoundException('Subscription not found');
+      }
+    } else {
+      throw new BadRequestException('Missing sessionId argument');
+    }
   }
 
   @Get('/checkout/cancel')

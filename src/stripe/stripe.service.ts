@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { CreateCheckoutSessionDto } from './dto/checkout.dto';
+import { addDays } from 'date-fns';
 import { DataSource } from 'typeorm';
+
+import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import {
@@ -11,12 +13,18 @@ import {
 } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
+  CreateSubscriptionDto,
   ListAllPaymentsDto,
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { Web3Service } from '../web3/web3.service';
 import { CreateUserDto } from 'src/user/dto/create.user.dto';
-import { AppName, UserType } from 'src/typeorm/user.entity';
+import {
+  AppName,
+  SubscriberStatus,
+  UserSubscriptionEntity,
+  UserType,
+} from 'src/typeorm/user.entity';
 
 @Injectable()
 export class StripeService {
@@ -51,11 +59,12 @@ export class StripeService {
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const {
-      name = 'test',
-      description = '',
-      currency = 'usd',
-      amount,
-      quantity = 1,
+      mode = 'payment',
+      // name = 'test',
+      // description = '',
+      // currency = 'usd',
+      // amount,
+      // quantity = 1,
       successUrl,
       cancelUrl,
     } = dto;
@@ -63,23 +72,24 @@ export class StripeService {
       payment_method_types: ['card'],
       line_items: [
         {
-          quantity,
-          price_data: {
-            currency,
-            unit_amount: amount * 100, // amount in USD cents
-            product_data: {
-              name,
-              // description,
-              // images: ['https://example.com/t-shirt.png'],
-            },
-          },
+          price: 'price_1O4dRcGdB7xhLnN1b7xvZspp',
+          quantity: 1,
+          // quantity,
+          // price_data: {
+          //   currency,
+          //   unit_amount: amount * 100, // amount in USD cents
+          //   product_data: {
+          //     name,
+          //     // description,
+          //     // images: ['https://example.com/t-shirt.png'],
+          //   },
+          // },
         },
       ],
-      mode: 'payment',
+      mode: mode,
       success_url: successUrl,
       cancel_url: cancelUrl,
     });
-    console.log('session', session);
     return session;
   }
 
@@ -95,6 +105,23 @@ export class StripeService {
     });
   }
 
+  async saveSubscription(dto: CreateSubscriptionDto) {
+    await this.dataSource.manager.insert(UserSubscriptionEntity, {
+      ...dto,
+      expirationAt: addDays(new Date(), 30),
+    });
+  }
+
+  async getActiveSubscription(userId: string) {
+    const row = await this.dataSource.manager.findOne(UserSubscriptionEntity, {
+      where: {
+        userId,
+        status: SubscriberStatus.active,
+      },
+    });
+    return row;
+  }
+
   async getPaymentBySessionId(sessionId: string) {
     const row = await this.dataSource.manager.findOne(StripePaymentEntity, {
       where: {
@@ -102,6 +129,17 @@ export class StripeService {
       },
     });
     return row;
+  }
+
+  async getSubscriptionBySessionId(sessionId: string) {
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    if (session) {
+      const subscription = await this.stripe.subscriptions.retrieve(
+        session.subscription.toString(),
+      );
+      return subscription;
+    }
+    return null;
   }
 
   async getPayments(

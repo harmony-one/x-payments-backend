@@ -125,6 +125,12 @@ export class CreateCheckoutSessionDto {
   name: string;
 
   @IsOptional()
+  customer?;
+
+  @IsOptional()
+  mode?;
+
+  @IsOptional()
   description?;
 
   @IsOptional()
