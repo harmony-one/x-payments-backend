@@ -157,7 +157,7 @@ export class UserSubscriptionEntity {
 
   @IsString()
   @Column({
-    type: 'number',
+    type: 'integer',
     default: 0,
   })
   quantity: number;

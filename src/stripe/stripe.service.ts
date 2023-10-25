@@ -7,10 +7,7 @@ import { DataSource } from 'typeorm';
 import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import {
-  CheckoutMethod,
-  PaymentStatus,
-} from '../typeorm/stripe.payment.entity';
+import { PaymentStatus } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
   CreateSubscriptionDto,
@@ -98,9 +95,8 @@ export class StripeService {
       paymentType: dto.paymentType,
       method: dto.method,
       sessionId: dto.sessionId,
-      userAddress: dto.userAddress || '',
       amountUsd: dto.amountUsd,
-      amountOne: dto.amountOne,
+      amountCredits: dto.amountCredits,
       params: dto.params,
     });
   }
@@ -177,18 +173,6 @@ export class StripeService {
     };
   }
 
-  async setTxHash(sessionId: string, txHash: string) {
-    await this.dataSource.manager.update(
-      StripePaymentEntity,
-      {
-        sessionId,
-      },
-      {
-        txHash,
-      },
-    );
-  }
-
   async setPaymentStatus(sessionId: string, status: PaymentStatus) {
     this.logger.log(`Set payment status: ${status}, session id: ${sessionId}`);
     await this.dataSource.manager.update(
@@ -243,35 +227,10 @@ export class StripeService {
     this.logger.log(`Processing payment ${JSON.stringify(payment)}`);
 
     try {
-      if (payment.method === CheckoutMethod.rent) {
-        await this.onPaymentOneCountryRent(payment);
-      } else {
-        throw new Error(`Unknown method: ${payment.method}`);
-      }
-
       await this.setPaymentStatus(sessionId, PaymentStatus.completed);
     } catch (e) {
       await this.setPaymentStatus(sessionId, PaymentStatus.processingFailed);
       this.logger.error(`Cannot complete payment ${sessionId}: ${e.message}`);
     }
-  }
-
-  async onPaymentOneCountryRent(payment: StripePaymentEntity) {
-    const { sessionId, userAddress, params } = payment;
-    const { domainName } = params;
-
-    const txHash = await this.web3Service.register(domainName, userAddress);
-    await this.setTxHash(sessionId, txHash);
-
-    const userRefillAmount = this.configService.get('web3.userRefillAmountOne');
-    if (userRefillAmount > 0) {
-      await this.web3Service.sendOneToAddress(userAddress, userRefillAmount);
-    }
-
-    await this.setPaymentStatus(sessionId, PaymentStatus.completed);
-
-    this.logger.log(
-      `Domain "${domainName}" rented by user "${userAddress}", tx hash: "${txHash}"`,
-    );
   }
 }

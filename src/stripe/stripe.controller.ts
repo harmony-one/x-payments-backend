@@ -46,6 +46,7 @@ import {
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
 import { SubscriberStatus } from 'src/typeorm/user.entity';
+import { HarmonyXIntentDto } from './dto/harmonyx.dto';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -149,9 +150,8 @@ export class StripeController {
       paymentType: PaymentType.checkout,
       method: CheckoutMethod.rent,
       sessionId: session.id,
-      userAddress: '',
       amountUsd: `${amount}`,
-      amountOne: '',
+      amountCredits: '',
       params: {},
     };
 
@@ -189,54 +189,6 @@ export class StripeController {
     //   // sessionId: session.id,
     //   // paymentUrl: session.url,
     // };
-  }
-
-  @Post('/checkout/one-country/rent')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
-    const { userAddress, params, successUrl, cancelUrl } = dto;
-
-    this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
-
-    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
-      dto.params.domainName,
-    );
-
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: '1.country',
-      // description: `Rent domain: ${dto.params.name}.1.country`,
-      amount: +amountUsd,
-      successUrl,
-      cancelUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
-
-    const paymentDto: CreatePaymentDto = {
-      paymentType: PaymentType.checkout,
-      method: CheckoutMethod.rent,
-      sessionId: session.id,
-      userAddress,
-      amountUsd,
-      amountOne,
-      params,
-    };
-
-    await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
   }
 
   @Get('/checkout/success/:userId/:sessionId')
@@ -280,17 +232,13 @@ export class StripeController {
     return 'CANCEL';
   }
 
-  @Post('/create-payment-intent/one-country/rent')
+  @Post('/create-payment-intent/harmonyx')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentIntentRent(@Body() dto: OneCountryRentDto) {
-    const { userAddress, params } = dto;
+  async createPaymentIntentHarmonyX(@Body() dto: HarmonyXIntentDto) {
+    const { userId, amountUsd } = dto;
 
     this.logger.log(
       `Received create payment intent request: ${JSON.stringify(dto)}`,
-    );
-
-    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
-      dto.params.domainName,
     );
 
     const paymentIntent = await this.stripeService.createPaymentIntent({
@@ -301,30 +249,13 @@ export class StripeController {
       paymentType: PaymentType.paymentIntent,
       method: CheckoutMethod.rent,
       sessionId: paymentIntent.id,
-      userAddress,
       amountUsd,
-      amountOne,
-      params,
+      amountCredits: '1',
+      params: {},
     };
 
     await this.stripeService.savePayment(paymentDto);
     return paymentIntent;
-  }
-
-  @Get('/validate/rent/:domainName')
-  @ApiParam({
-    name: 'domainName',
-    required: true,
-    description: '1country domain name',
-    schema: { oneOf: [{ type: 'string' }] },
-  })
-  @ApiOkResponse({
-    type: StripePaymentEntity,
-  })
-  async validateRent(@Param() params) {
-    const { domainName } = params;
-    const data = await this.web3Service.validateDomainRent(domainName);
-    return data;
   }
 
   @Get('/payment/:sessionId')
@@ -354,7 +285,6 @@ export class StripeController {
     type: ListAllPaymentsResponseDto,
   })
   async getPayments(@Query() dto: ListAllPaymentsDto) {
-    const data = await this.stripeService.getPayments(dto);
-    return data;
+    return await this.stripeService.getPayments(dto);
   }
 }
