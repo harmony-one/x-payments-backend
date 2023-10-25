@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
+  CheckoutAmountResponseDto,
   CheckoutCreateResponseDto,
   CheckoutOneCountryRentDto,
   CreateCheckoutSessionDto,
@@ -43,6 +45,7 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
+import { SubscriberStatus } from 'src/typeorm/user.entity';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -101,6 +104,93 @@ export class StripeController {
     res.json({ received: true });
   }
 
+  @Get('/subscription/:userId')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'UserId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async getActiveSubscription(@Param() params): Promise<any> {
+    const { userId } = params;
+    if (userId) {
+      const subscription = await this.stripeService.getActiveSubscription(
+        userId,
+      );
+      if (subscription) {
+        return subscription;
+      } else {
+        throw new NotFoundException('Subscription not found');
+      }
+    } else {
+      throw new BadRequestException('Missing sessionId argument');
+    }
+  }
+
+  @Post('/subscription')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createSubscription(@Body() dto: CreateCheckoutSessionDto) {
+    const { amount, customer, successUrl, cancelUrl, userId } = dto;
+
+    this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
+
+    const checkoutDto: CreateCheckoutSessionDto = {
+      mode: 'subscription',
+      name: '1.country',
+      customer: customer,
+      // description: `Rent domain: ${dto.params.name}.1.country`,
+      amount: amount,
+      successUrl: successUrl + `/{CHECKOUT_SESSION_ID}`, //
+      cancelUrl,
+    };
+    const session = await this.stripeService.createCheckoutSession(checkoutDto); // checkoutDto);
+
+    const paymentDto: CreatePaymentDto = {
+      paymentType: PaymentType.checkout,
+      method: CheckoutMethod.rent,
+      sessionId: session.id,
+      userAddress: '',
+      amountUsd: `${amount}`,
+      amountOne: '',
+      params: {},
+    };
+
+    await this.stripeService.savePayment(paymentDto);
+
+    this.logger.log(
+      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
+    );
+    // return redirect(session.url, code=303)
+    return {
+      url: session.url,
+      amountUsd: amount,
+      amountOne: 0,
+      // sessionId: session.id,
+      // paymentUrl: session.url,
+    };
+  }
+
+  @Post('/subscription/usage/:subscriptionId')
+  @ApiParam({
+    name: 'subscriptionId',
+    required: true,
+    description: 'Subcription ID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async subscriptionUsage(@Param() params) {
+    const { subscriptionId } = params;
+    const usage = this.stripeService.subscriptionUsage(subscriptionId);
+    console.log(usage);
+    return 'OK';
+    // {
+    //   url: session.url,
+    //   amountUsd: amount,
+    //   amountOne: 0,
+    //   // sessionId: session.id,
+    //   // paymentUrl: session.url,
+    // };
+  }
+
   @Post('/checkout/one-country/rent')
   @ApiOkResponse({
     description: 'Stripe session params',
@@ -147,6 +237,47 @@ export class StripeController {
       sessionId: session.id,
       paymentUrl: session.url,
     };
+  }
+
+  @Get('/checkout/success/:userId/:sessionId')
+  @ApiParam({
+    name: 'sessionId',
+    required: true,
+    description: 'Stripe sessionId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'UserId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async getSuccess(@Param() params): Promise<string> {
+    const { sessionId, userId } = params;
+    if (sessionId) {
+      const subscription = await this.stripeService.getSubscriptionBySessionId(
+        sessionId,
+      );
+      if (subscription) {
+        await this.stripeService.saveSubscription({
+          userId: userId,
+          customerId: subscription.customer.toString(),
+          priceId: subscription.items.data[0].price.id,
+          subscriptionId: subscription.id,
+          status: SubscriberStatus.active,
+        });
+        return '<html><body><h1>Thanks for your order</h1></body></html>';
+      } else {
+        throw new NotFoundException('Subscription not found');
+      }
+    } else {
+      throw new BadRequestException('Missing sessionId argument');
+    }
+  }
+
+  @Get('/checkout/cancel')
+  async getCancel(): Promise<string> {
+    return 'CANCEL';
   }
 
   @Post('/create-payment-intent/one-country/rent')

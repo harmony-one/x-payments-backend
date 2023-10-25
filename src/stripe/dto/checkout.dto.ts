@@ -125,7 +125,16 @@ export class CreateCheckoutSessionDto {
   name: string;
 
   @IsOptional()
+  customer?;
+
+  @IsOptional()
+  mode?;
+
+  @IsOptional()
   description?;
+
+  @IsOptional()
+  userId?;
 
   @IsOptional()
   currency?;
@@ -134,6 +143,9 @@ export class CreateCheckoutSessionDto {
 
   @IsOptional()
   quantity?;
+
+  @IsOptional()
+  url?;
 
   successUrl: string;
 

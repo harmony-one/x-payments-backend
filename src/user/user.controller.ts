@@ -34,7 +34,7 @@ export class UserController {
   @ApiParam({
     name: 'userId',
     required: true,
-    description: 'Telegram userId',
+    description: 'Telegram/Discord userId',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
@@ -59,7 +59,7 @@ export class UserController {
   @ApiParam({
     name: 'userId',
     required: true,
-    description: 'Telegram userId',
+    description: 'Telegram/discord userId',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
@@ -89,14 +89,13 @@ export class UserController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async checkoutOneCountryRent(@Body() dto: CreateUserDto) {
     const { userId } = dto;
-
     const user = await this.userService.getUserById(userId);
     if (user) {
-      throw new BadRequestException('User already exists');
+      return user; // throw new BadRequestException('User already exists');
     }
 
-    const { privateKey, ...rest } = await this.userService.createUser(dto);
-    return { ...rest };
+    const newUser = await this.userService.createUser(dto);
+    return newUser;
   }
 
   @Post('/pay')

@@ -110,3 +110,36 @@ export class StripePaymentEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
+
+@Entity({ name: 'stripe_subscriptions' })
+export class StripeSubscriptionEntity {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @ApiProperty()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  userId: string;
+
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  customerId: string;
+
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  subscriptionId: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+}

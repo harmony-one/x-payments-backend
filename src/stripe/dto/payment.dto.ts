@@ -7,6 +7,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { SubscriberStatus } from 'src/typeorm/user.entity';
 
 export class CreatePaymentDto {
   paymentType: PaymentType;
@@ -16,6 +17,14 @@ export class CreatePaymentDto {
   amountOne: string;
   params: object;
   userAddress? = '';
+}
+
+export class CreateSubscriptionDto {
+  userId: string;
+  customerId: string;
+  subscriptionId: string;
+  priceId: string;
+  status: SubscriberStatus;
 }
 
 export class ListAllPaymentsDto {

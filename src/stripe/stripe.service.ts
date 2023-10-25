@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { CreateCheckoutSessionDto } from './dto/checkout.dto';
+import { addDays } from 'date-fns';
 import { DataSource } from 'typeorm';
+
+import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import { StripePaymentEntity } from '../typeorm';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import {
@@ -11,10 +13,18 @@ import {
 } from '../typeorm/stripe.payment.entity';
 import {
   CreatePaymentDto,
+  CreateSubscriptionDto,
   ListAllPaymentsDto,
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { Web3Service } from '../web3/web3.service';
+import { CreateUserDto } from 'src/user/dto/create.user.dto';
+import {
+  AppName,
+  SubscriberStatus,
+  UserSubscriptionEntity,
+  UserType,
+} from 'src/typeorm/user.entity';
 
 @Injectable()
 export class StripeService {
@@ -30,37 +40,56 @@ export class StripeService {
     this.stripe = new Stripe(secretKey, { apiVersion });
   }
 
+  async createCustomer(dto: CreateUserDto) {
+    const {
+      userId,
+      appName = AppName.telegram,
+      userType = UserType.single,
+    } = dto;
+    const params: Stripe.CustomerCreateParams = {
+      metadata: {
+        userId,
+        appName,
+        userType,
+      },
+    };
+    const customer = await this.stripe.customers.create(params);
+    return customer;
+  }
+
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const {
-      name,
-      description = '',
-      currency = 'usd',
-      amount,
-      quantity = 1,
+      mode = 'payment',
+      // name = 'test',
+      // description = '',
+      // currency = 'usd',
+      // amount,
+      // quantity = 1,
       successUrl,
       cancelUrl,
     } = dto;
-
     const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
       line_items: [
         {
-          quantity,
-          price_data: {
-            currency,
-            unit_amount: amount, // amount in USD cents
-            product_data: {
-              name,
-              // description,
-              // images: ['https://example.com/t-shirt.png'],
-            },
-          },
+          price: 'price_1O4dRcGdB7xhLnN1b7xvZspp',
+          quantity: 1,
+          // quantity,
+          // price_data: {
+          //   currency,
+          //   unit_amount: amount * 100, // amount in USD cents
+          //   product_data: {
+          //     name,
+          //     // description,
+          //     // images: ['https://example.com/t-shirt.png'],
+          //   },
+          // },
         },
       ],
-      mode: 'payment',
+      mode: mode,
       success_url: successUrl,
       cancel_url: cancelUrl,
     });
-
     return session;
   }
 
@@ -76,6 +105,34 @@ export class StripeService {
     });
   }
 
+  async saveSubscription(dto: CreateSubscriptionDto) {
+    await this.dataSource.manager.insert(UserSubscriptionEntity, {
+      ...dto,
+      expirationAt: addDays(new Date(), 30),
+      quantity: 25,
+    });
+  }
+
+  async subscriptionUsage(subscriptionId: string) {
+    const usage = await this.stripe.subscriptionItems.createUsageRecord(
+      subscriptionId,
+      {
+        quantity: 1,
+      },
+    );
+    return usage;
+  }
+
+  async getActiveSubscription(userId: string) {
+    const row = await this.dataSource.manager.findOne(UserSubscriptionEntity, {
+      where: {
+        userId,
+        status: SubscriberStatus.active,
+      },
+    });
+    return row;
+  }
+
   async getPaymentBySessionId(sessionId: string) {
     const row = await this.dataSource.manager.findOne(StripePaymentEntity, {
       where: {
@@ -83,6 +140,17 @@ export class StripeService {
       },
     });
     return row;
+  }
+
+  async getSubscriptionBySessionId(sessionId: string) {
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    if (session) {
+      const subscription = await this.stripe.subscriptions.retrieve(
+        session.subscription.toString(),
+      );
+      return subscription;
+    }
+    return null;
   }
 
   async getPayments(
