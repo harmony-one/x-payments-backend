@@ -23,7 +23,6 @@ export default () => ({
     oneWalletPrivateKey: process.env.ONE_WALLET_PRIVATE_KEY || '',
     txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT || '4000'),
     userRefillAmountOne: process.env.USER_REFILL_AMOUNT_ONE || '1',
-    serviceFeePercent: process.env.SERVICE_FEE_PERCENT || '30', // in %
   },
   telegram: {
     botApiKey: process.env.TG_BOT_API_KEY || '',
