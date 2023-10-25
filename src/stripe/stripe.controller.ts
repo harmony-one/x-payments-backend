@@ -104,7 +104,7 @@ export class StripeController {
     res.json({ received: true });
   }
 
-  @Get('/checkout/subscription/:userId')
+  @Get('/subscription/:userId')
   @ApiParam({
     name: 'userId',
     required: true,
@@ -127,20 +127,12 @@ export class StripeController {
     }
   }
 
-  @Post('/checkout/subscription')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutAmountResponseDto,
-  })
+  @Post('/subscription')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutFiatSubscription(@Body() dto: CreateCheckoutSessionDto) {
+  async createSubscription(@Body() dto: CreateCheckoutSessionDto) {
     const { amount, customer, successUrl, cancelUrl, userId } = dto;
 
     this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
-
-    // const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
-    //   dto.params.domainName,
-    // );
 
     const checkoutDto: CreateCheckoutSessionDto = {
       mode: 'subscription',
@@ -148,7 +140,7 @@ export class StripeController {
       customer: customer,
       // description: `Rent domain: ${dto.params.name}.1.country`,
       amount: amount,
-      successUrl: successUrl + `/${userId}/{CHECKOUT_SESSION_ID}`,
+      successUrl: successUrl + `/{CHECKOUT_SESSION_ID}`, //
       cancelUrl,
     };
     const session = await this.stripeService.createCheckoutSession(checkoutDto); // checkoutDto);
@@ -176,6 +168,27 @@ export class StripeController {
       // sessionId: session.id,
       // paymentUrl: session.url,
     };
+  }
+
+  @Post('/subscription/usage/:subscriptionId')
+  @ApiParam({
+    name: 'subscriptionId',
+    required: true,
+    description: 'Subcription ID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  async subscriptionUsage(@Param() params) {
+    const { subscriptionId } = params;
+    const usage = this.stripeService.subscriptionUsage(subscriptionId);
+    console.log(usage);
+    return 'OK';
+    // {
+    //   url: session.url,
+    //   amountUsd: amount,
+    //   amountOne: 0,
+    //   // sessionId: session.id,
+    //   // paymentUrl: session.url,
+    // };
   }
 
   @Post('/checkout/one-country/rent')

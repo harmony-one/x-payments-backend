@@ -109,7 +109,18 @@ export class StripeService {
     await this.dataSource.manager.insert(UserSubscriptionEntity, {
       ...dto,
       expirationAt: addDays(new Date(), 30),
+      quantity: 25,
     });
+  }
+
+  async subscriptionUsage(subscriptionId: string) {
+    const usage = await this.stripe.subscriptionItems.createUsageRecord(
+      subscriptionId,
+      {
+        quantity: 1,
+      },
+    );
+    return usage;
   }
 
   async getActiveSubscription(userId: string) {

@@ -155,6 +155,13 @@ export class UserSubscriptionEntity {
   })
   priceId: string;
 
+  @IsString()
+  @Column({
+    type: 'number',
+    default: 0,
+  })
+  quantity: number;
+
   @IsEnum(SubscriberStatus)
   @Column({
     type: 'varchar',
