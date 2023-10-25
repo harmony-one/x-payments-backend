@@ -4,7 +4,6 @@ import { UserEntity, UserPaymentEntity } from '../typeorm';
 import { CreateUserDto } from './dto/create.user.dto';
 import { Web3Service } from '../web3/web3.service';
 import { StripeService } from 'src/stripe/stripe.service';
-import { WithdrawFundsDto } from './dto/withdraw.dto';
 import { GetUserPaymentsDto } from './dto/payments.dto';
 
 @Injectable()
@@ -33,23 +32,8 @@ export class UserService {
       appName,
       customerId: customer.id,
       userAddress: account.address,
-      privateKey: account.privateKey,
     });
 
-    return result.raw[0];
-  }
-
-  async createUserPayment(
-    dto: WithdrawFundsDto,
-    amount: string,
-    txHash: string,
-  ) {
-    const { userId } = dto;
-    const result = await this.dataSource.manager.insert(UserPaymentEntity, {
-      userId,
-      txHash,
-      amount,
-    });
     return result.raw[0];
   }
 

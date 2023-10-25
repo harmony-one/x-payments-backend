@@ -20,9 +20,7 @@ export default () => ({
     oneCountryContractAddress:
       process.env.ONE_COUNTRY_CONTRACT_ADDRESS ||
       '0x547942748Cc8840FEc23daFdD01E6457379B446D',
-    oneWalletPrivateKey: process.env.ONE_WALLET_PRIVATE_KEY || '',
     txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT || '4000'),
-    userRefillAmountOne: process.env.USER_REFILL_AMOUNT_ONE || '1',
   },
   telegram: {
     botApiKey: process.env.TG_BOT_API_KEY || '',

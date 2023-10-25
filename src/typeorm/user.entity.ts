@@ -75,13 +75,6 @@ export class UserEntity {
   })
   userAddress: string;
 
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  privateKey: string;
-
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
