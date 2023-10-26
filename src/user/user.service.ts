@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserEntity, UserPaymentEntity } from '../typeorm';
+import { UserEntity } from '../typeorm';
 import { CreateUserDto } from './dto/create.user.dto';
 import { Web3Service } from '../web3/web3.service';
 import { StripeService } from 'src/stripe/stripe.service';
-import { GetUserPaymentsDto } from './dto/payments.dto';
 
 @Injectable()
 export class UserService {
@@ -35,27 +34,5 @@ export class UserService {
     });
 
     return result.raw[0];
-  }
-
-  async getPayments(dto: GetUserPaymentsDto) {
-    const { offset, limit, ...rest } = dto;
-    const [items, count] = await this.dataSource.manager.findAndCount(
-      UserPaymentEntity,
-      {
-        where: {
-          ...rest,
-        },
-        skip: offset,
-        take: limit,
-        order: {
-          id: 'desc',
-        },
-      },
-    );
-
-    return {
-      items,
-      count,
-    };
   }
 }

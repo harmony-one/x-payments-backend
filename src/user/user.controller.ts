@@ -14,7 +14,6 @@ import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { StripePaymentEntity } from '../typeorm';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
-import { GetUserPaymentsDto } from './dto/payments.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -75,11 +74,5 @@ export class UserController {
     }
 
     return await this.userService.createUser(dto);
-  }
-
-  @Get('/payments')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async getPayments(@Query() dto: GetUserPaymentsDto) {
-    return await this.userService.getPayments(dto);
   }
 }
