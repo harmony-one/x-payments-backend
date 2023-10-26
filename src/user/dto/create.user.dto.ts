@@ -1,17 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEnum } from 'class-validator';
+import { IsString, IsEnum, IsOptional } from 'class-validator';
 import { UserType } from 'src/typeorm/user.entity';
 
 export class CreateUserDto {
   @ApiProperty()
-  @IsString()
-  userId: string;
-
-  @ApiProperty()
+  @IsOptional()
   @IsString()
   appName: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsEnum(UserType)
   userType: UserType;
 }

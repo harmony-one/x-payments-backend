@@ -28,7 +28,6 @@ export class StripeService {
   private readonly logger = new Logger(StripeService.name);
   constructor(
     private configService: ConfigService,
-    private web3Service: Web3Service,
     private dataSource: DataSource,
   ) {
     const secretKey = configService.get('stripe.secretKey');
@@ -37,10 +36,9 @@ export class StripeService {
   }
 
   async createCustomer(dto: CreateUserDto) {
-    const { userId, appName = '', userType = UserType.single } = dto;
+    const { appName = '', userType = UserType.single } = dto;
     const params: Stripe.CustomerCreateParams = {
       metadata: {
-        userId,
         appName,
         userType,
       },

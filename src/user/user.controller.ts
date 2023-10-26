@@ -67,12 +67,6 @@ export class UserController {
   @Post('/create')
   @UsePipes(new ValidationPipe({ transform: true }))
   async createUser(@Body() dto: CreateUserDto) {
-    const { userId } = dto;
-    const user = await this.userService.getUserById(userId);
-    if (user) {
-      throw new BadRequestException('User already exists');
-    }
-
     return await this.userService.createUser(dto);
   }
 }

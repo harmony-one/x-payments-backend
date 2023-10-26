@@ -30,13 +30,6 @@ export class UserEntity {
   id: number;
 
   @ApiProperty()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  userId: string;
-
-  @ApiProperty()
   @IsString()
   @Column({
     type: 'varchar',
@@ -64,18 +57,10 @@ export class UserEntity {
   @ApiProperty()
   @IsString()
   @Column({
-    type: 'varchar',
-    default: '0',
+    type: 'integer',
+    default: 0,
   })
-  amountUsd: string;
-
-  @ApiProperty()
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '0',
-  })
-  amountCredits: string;
+  balance: number;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
