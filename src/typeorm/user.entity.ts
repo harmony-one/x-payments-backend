@@ -8,11 +8,6 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
-export enum AppName {
-  telegram = 'telegram',
-  discord = 'discord',
-}
-
 export enum UserType {
   single = 'single',
   group = 'group',
@@ -42,13 +37,12 @@ export class UserEntity {
   userId: string;
 
   @ApiProperty()
-  @IsEnum(AppName)
+  @IsString()
   @Column({
     type: 'varchar',
-    enum: AppName,
-    default: AppName.telegram,
+    default: ''
   })
-  appName: AppName;
+  appName: string;
 
   @ApiProperty()
   @IsEnum(UserType)

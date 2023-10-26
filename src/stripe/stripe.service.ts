@@ -17,7 +17,6 @@ import {
 import { Web3Service } from '../web3/web3.service';
 import { CreateUserDto } from 'src/user/dto/create.user.dto';
 import {
-  AppName,
   SubscriberStatus,
   UserSubscriptionEntity,
   UserType,
@@ -38,11 +37,7 @@ export class StripeService {
   }
 
   async createCustomer(dto: CreateUserDto) {
-    const {
-      userId,
-      appName = AppName.telegram,
-      userType = UserType.single,
-    } = dto;
+    const { userId, appName = '', userType = UserType.single } = dto;
     const params: Stripe.CustomerCreateParams = {
       metadata: {
         userId,

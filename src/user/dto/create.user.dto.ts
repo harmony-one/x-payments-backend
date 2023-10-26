@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsEnum } from 'class-validator';
-import { AppName, UserType } from 'src/typeorm/user.entity';
+import { UserType } from 'src/typeorm/user.entity';
 
 export class CreateUserDto {
   @ApiProperty()
@@ -8,8 +8,8 @@ export class CreateUserDto {
   userId: string;
 
   @ApiProperty()
-  @IsEnum(AppName)
-  appName: AppName;
+  @IsString()
+  appName: string;
 
   @ApiProperty()
   @IsEnum(UserType)
