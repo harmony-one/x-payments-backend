@@ -23,14 +23,12 @@ export class UserService {
   async createUser(dto: CreateUserDto) {
     const { userId, userType, appName } = dto;
 
-    const account = this.web3Service.createAccount();
     const customer = await this.stripeService.createCustomer(dto);
     const result = await this.dataSource.manager.insert(UserEntity, {
       userId,
       userType,
       appName,
       customerId: customer.id,
-      userAddress: account.address,
     });
 
     return result.raw[0];

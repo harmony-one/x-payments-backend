@@ -18,11 +18,7 @@ import {
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import {
-  CheckoutAmountResponseDto,
-  CheckoutCreateResponseDto,
-  CheckoutOneCountryRentDto,
   CreateCheckoutSessionDto,
-  OneCountryRentDto,
 } from './dto/checkout.dto';
 import {
   ApiExcludeEndpoint,

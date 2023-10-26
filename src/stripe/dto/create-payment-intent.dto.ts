@@ -1,15 +1,5 @@
 import { IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { OneCountryRentParams } from './checkout.dto';
-
-export class CreatePaymentIntentRentDto {
-  @ApiProperty()
-  @IsString()
-  userAddress: string;
-
-  @ApiProperty({ type: () => OneCountryRentParams })
-  params: OneCountryRentParams;
-}
 
 export class CreatePaymentIntentDto {
   @ApiProperty({ default: 'card' })

@@ -65,9 +65,17 @@ export class UserEntity {
   @IsString()
   @Column({
     type: 'varchar',
-    default: '',
+    default: '0',
   })
-  userAddress: string;
+  amountUsd: string;
+
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '0',
+  })
+  amountCredits: string;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
