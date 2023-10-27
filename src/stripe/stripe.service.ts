@@ -24,7 +24,7 @@ import {
 
 @Injectable()
 export class StripeService {
-  private stripe: Stripe;
+  public stripe: Stripe;
   private readonly logger = new Logger(StripeService.name);
   constructor(
     private configService: ConfigService,

@@ -17,9 +17,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import {
-  CreateCheckoutSessionDto,
-} from './dto/checkout.dto';
+import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import {
   ApiExcludeEndpoint,
   ApiOkResponse,
@@ -41,8 +39,9 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
-import { SubscriberStatus } from 'src/typeorm/user.entity';
+import { SubscriberStatus, UserType } from 'src/typeorm/user.entity';
 import { HarmonyXIntentDto } from './dto/harmonyx.dto';
+import { CreateUserDto } from '../user/dto/create.user.dto';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -252,6 +251,37 @@ export class StripeController {
 
     await this.stripeService.savePayment(paymentDto);
     return paymentIntent;
+  }
+
+  @Post('/payment-sheet')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createPaymentSheet() {
+    const userDto: CreateUserDto = {
+      appName: 'test_app',
+      userType: UserType.single,
+    };
+    const customer = await this.stripeService.createCustomer(userDto);
+    const ephemeralKey = await this.stripeService.stripe.ephemeralKeys.create(
+      { customer: customer.id },
+      { apiVersion: '2023-08-16' },
+    );
+    const paymentIntent = await this.stripeService.stripe.paymentIntents.create(
+      {
+        amount: 100,
+        currency: 'eur',
+        customer: customer.id,
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      },
+    );
+    return {
+      paymentIntent: paymentIntent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: customer.id,
+      publishableKey: this.configService.get('stripe.publishableKey'),
+    };
   }
 
   @Get('/payment/:sessionId')

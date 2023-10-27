@@ -10,7 +10,7 @@ export default () => ({
     publishableKey: process.env.STRIPE_PUB_KEY || '',
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     endpointSecret: process.env.STRIPE_ENDPOINT_SECRET || '',
-    apiVersion: process.env.STRIPE_API_VERSION || '2022-11-15',
+    apiVersion: process.env.STRIPE_API_VERSION || '2023-08-16',
     checkoutMinAmount: +(process.env.STRIPE_CHECKOUT_MIN_AMOUNT || 50), // 50 cents = $0.5
     verifyWebhookEvent: Boolean(
       process.env.STRIPE_VERIFY_WEBHOOK_EVENT || false,

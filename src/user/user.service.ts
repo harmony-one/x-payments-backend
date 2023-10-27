@@ -4,8 +4,8 @@ import { UserEntity } from '../typeorm';
 import { CreateUserDto } from './dto/create.user.dto';
 import { Web3Service } from '../web3/web3.service';
 import { StripeService } from 'src/stripe/stripe.service';
-import { ConfigService } from "@nestjs/config";
-import { UserType } from "../typeorm/user.entity";
+import { ConfigService } from '@nestjs/config';
+import { UserType } from '../typeorm/user.entity';
 
 @Injectable()
 export class UserService {
