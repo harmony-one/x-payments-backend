@@ -35,12 +35,8 @@ export class StripeService {
   }
 
   async createCustomer(dto: CreateUserDto) {
-    const { appName = '', userType = UserType.single } = dto;
     const params: Stripe.CustomerCreateParams = {
-      metadata: {
-        appName,
-        userType,
-      },
+      metadata: {},
     };
     const customer = await this.stripe.customers.create(params);
     return customer;

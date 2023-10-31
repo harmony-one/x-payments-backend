@@ -7,7 +7,6 @@ import { AppService } from './app.service';
 import configuration from './config';
 import { StripeController } from './stripe/stripe.controller';
 import { StripeService } from './stripe/stripe.service';
-import { Web3Module } from './web3/web3.module';
 import entities from './typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { UserModule } from './user/user.module';
@@ -33,7 +32,7 @@ import { UserModule } from './user/user.module';
       }),
       inject: [ConfigService],
     }),
-    Web3Module,
+    // Web3Module,
     HttpModule,
     ScheduleModule.forRoot(),
     UserModule,

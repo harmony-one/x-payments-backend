@@ -26,25 +26,8 @@ export enum SubscriberStatus {
 }
 @Entity({ name: 'users' })
 export class UserEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ApiProperty()
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  appName: string;
-
-  @ApiProperty()
-  @IsEnum(UserType)
-  @Column({
-    type: 'varchar',
-    enum: UserType,
-    default: UserType.single,
-  })
-  userType: UserType;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
   @IsString()

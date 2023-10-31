@@ -16,7 +16,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle(configService.get('name'))
-    .setDescription('1.country API description')
+    // .setDescription('')
     .setVersion(configService.get('version'))
     .addApiKey({ type: 'apiKey', in: 'header', name: 'X-API-KEY' }, 'X-API-KEY')
     .build();

@@ -11,9 +11,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
-import { StripePaymentEntity } from '../typeorm';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
+import { UserEntity } from '../typeorm';
+import { PayDto } from "./dto/pay.dto";
 
 @ApiTags('users')
 @Controller('users')
@@ -24,11 +25,11 @@ export class UserController {
   @ApiParam({
     name: 'userId',
     required: true,
-    description: 'Telegram/Discord userId',
+    description: 'User uuid',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
-    type: StripePaymentEntity,
+    type: UserEntity,
   })
   async getUserById(@Param() params) {
     const { userId } = params;
@@ -41,15 +42,15 @@ export class UserController {
     return user;
   }
 
-  @Get('/balance/:userId')
+  @Get('/:userId/balance')
   @ApiParam({
     name: 'userId',
     required: true,
-    description: 'Telegram/discord userId',
+    description: 'User uuid',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
-    type: StripePaymentEntity,
+    type: Number,
   })
   async getUserBalance(@Param() params) {
     const { userId } = params;
@@ -59,14 +60,18 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    return {
-      credits: '1',
-    };
+    return user.balance;
   }
 
   @Post('/create')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async createUser(@Body() dto: CreateUserDto) {
-    return await this.userService.createUser(dto);
+  async createUser(): Promise<UserEntity> {
+    return await this.userService.createUser();
+  }
+
+  @Post('/pay')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async pay(@Body() dto: PayDto): Promise<UserEntity> {
+    return await this.userService.pay(dto);
   }
 }
