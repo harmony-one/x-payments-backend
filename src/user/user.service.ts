@@ -1,77 +1,90 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserEntity, UserPaymentEntity } from '../typeorm';
-import { CreateUserDto } from './dto/create.user.dto';
-import { Web3Service } from '../web3/web3.service';
+import { UserEntity } from '../typeorm';
 import { StripeService } from 'src/stripe/stripe.service';
-import { WithdrawFundsDto } from './dto/withdraw.dto';
-import { GetUserPaymentsDto } from './dto/payments.dto';
+import { ConfigService } from '@nestjs/config';
+import { PayDto } from './dto/pay.dto';
 
 @Injectable()
 export class UserService {
   constructor(
     private dataSource: DataSource,
-    private readonly web3Service: Web3Service,
     private readonly stripeService: StripeService,
+    private readonly configService: ConfigService,
   ) {}
-  async getUserById(userId: string) {
+  async getUserById(id: string) {
     return await this.dataSource.manager.findOne(UserEntity, {
       where: {
-        userId,
+        id,
       },
     });
   }
 
-  async createUser(dto: CreateUserDto) {
-    const { userId, userType, appName } = dto;
-
-    const account = this.web3Service.createAccount();
-    const customer = await this.stripeService.createCustomer(dto);
+  async createUser() {
+    const balance = this.configService.get('initialCreditsAmount');
+    // const customer = await this.stripeService.createCustomer(dto);
     const result = await this.dataSource.manager.insert(UserEntity, {
-      userId,
-      userType,
-      appName,
-      customerId: customer.id,
-      userAddress: account.address,
-      privateKey: account.privateKey,
+      // customerId: customer.id,
+      balance,
     });
 
     return result.raw[0];
   }
 
-  async createUserPayment(
-    dto: WithdrawFundsDto,
-    amount: string,
-    txHash: string,
-  ) {
-    const { userId } = dto;
-    const result = await this.dataSource.manager.insert(UserPaymentEntity, {
-      userId,
-      txHash,
-      amount,
-    });
-    return result.raw[0];
-  }
+  async pay(dto: PayDto): Promise<UserEntity> {
+    const { userId, amount } = dto;
+    const user = await this.getUserById(userId);
 
-  async getPayments(dto: GetUserPaymentsDto) {
-    const { offset, limit, ...rest } = dto;
-    const [items, count] = await this.dataSource.manager.findAndCount(
-      UserPaymentEntity,
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const newUserBalance = user.balance - amount;
+
+    if (newUserBalance < 0) {
+      throw new BadRequestException('Not enough balance');
+    }
+
+    await this.dataSource.manager.update(
+      UserEntity,
       {
-        where: {
-          ...rest,
-        },
-        skip: offset,
-        take: limit,
-        order: {
-          id: 'desc',
-        },
+        id: userId,
+      },
+      {
+        balance: newUserBalance,
       },
     );
+    return this.getUserById(userId);
+  }
 
-    return {
-      items,
-      count,
-    };
+  async refill(dto: PayDto): Promise<UserEntity> {
+    const { userId, amount } = dto;
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const maxAmount = 1000000;
+    if (amount > maxAmount) {
+      throw new BadRequestException(`Max refill amount: ${maxAmount}`);
+    }
+
+    const newUserBalance = user.balance + amount;
+
+    await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        balance: newUserBalance,
+      },
+    );
+    return this.getUserById(userId);
   }
 }

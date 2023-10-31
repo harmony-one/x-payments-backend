@@ -14,9 +14,8 @@ export class CreatePaymentDto {
   method: CheckoutMethod;
   sessionId: string;
   amountUsd: string;
-  amountOne: string;
+  amountCredits: string;
   params: object;
-  userAddress? = '';
 }
 
 export class CreateSubscriptionDto {
@@ -63,22 +62,12 @@ export class ListAllPaymentsDto {
   @ApiProperty({ type: String, required: false })
   @IsOptional()
   @IsString()
-  txHash?: string;
-
-  @ApiProperty({ type: String, required: false })
-  @IsOptional()
-  @IsString()
   amountUsd?: string;
 
   @ApiProperty({ type: String, required: false })
   @IsOptional()
   @IsString()
-  amountOne?: string;
-
-  @ApiProperty({ type: String, required: false })
-  @IsOptional()
-  @IsString()
-  userAddress?: string;
+  amountCredits?: string;
 
   @ApiProperty({ type: Number, required: false, default: 0 })
   @IsOptional()

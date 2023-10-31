@@ -25,11 +25,6 @@ export class AppController {
       },
       web3: {
         rpcUrl: this.configService.get('web3.rpcUrl'),
-        oneCountryContractAddress: this.configService.get(
-          'web3.oneCountryContractAddress',
-        ),
-        userRefillAmountOne: this.configService.get('web3.userRefillAmountOne'),
-        serviceFeePercent: this.configService.get('web3.serviceFeePercent'),
       },
     };
   }

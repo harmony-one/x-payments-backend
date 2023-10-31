@@ -30,25 +30,6 @@ export class OneCountryRentParams {
   domainName: string;
 }
 
-export class OneCountryRentDto {
-  @ApiProperty()
-  @IsString()
-  userAddress: string;
-
-  @ApiProperty({ type: () => OneCountryRentParams })
-  params: OneCountryRentParams;
-}
-
-export class CheckoutOneCountryRentDto extends OneCountryRentDto {
-  @ApiProperty()
-  @IsString()
-  successUrl: string;
-
-  @ApiProperty()
-  @IsString()
-  cancelUrl: string;
-}
-
 export class VideoContractParams {
   @ApiProperty()
   @IsString()

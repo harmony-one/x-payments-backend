@@ -17,13 +17,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import {
-  CheckoutAmountResponseDto,
-  CheckoutCreateResponseDto,
-  CheckoutOneCountryRentDto,
-  CreateCheckoutSessionDto,
-  OneCountryRentDto,
-} from './dto/checkout.dto';
+import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import {
   ApiExcludeEndpoint,
   ApiOkResponse,
@@ -31,7 +25,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { Web3Service } from '../web3/web3.service';
 import { ConfigService } from '@nestjs/config';
 import {
   CheckoutMethod,
@@ -45,7 +38,9 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
-import { SubscriberStatus } from 'src/typeorm/user.entity';
+import { SubscriberStatus, UserType } from 'src/typeorm/user.entity';
+import { HarmonyXIntentDto } from './dto/harmonyx.dto';
+import { CreateUserDto } from '../user/dto/create.user.dto';
 
 @ApiTags('stripe')
 @Controller('/stripe')
@@ -53,7 +48,6 @@ export class StripeController {
   private readonly logger = new Logger(StripeController.name);
   constructor(
     private readonly stripeService: StripeService,
-    private readonly web3Service: Web3Service,
     private readonly configService: ConfigService,
   ) {}
 
@@ -149,9 +143,8 @@ export class StripeController {
       paymentType: PaymentType.checkout,
       method: CheckoutMethod.rent,
       sessionId: session.id,
-      userAddress: '',
       amountUsd: `${amount}`,
-      amountOne: '',
+      amountCredits: '',
       params: {},
     };
 
@@ -189,54 +182,6 @@ export class StripeController {
     //   // sessionId: session.id,
     //   // paymentUrl: session.url,
     // };
-  }
-
-  @Post('/checkout/one-country/rent')
-  @ApiOkResponse({
-    description: 'Stripe session params',
-    type: CheckoutCreateResponseDto,
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async checkoutOneCountryRent(@Body() dto: CheckoutOneCountryRentDto) {
-    const { userAddress, params, successUrl, cancelUrl } = dto;
-
-    this.logger.log(`Checkout oneCountry rent request: ${JSON.stringify(dto)}`);
-
-    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
-      dto.params.domainName,
-    );
-
-    const checkoutDto: CreateCheckoutSessionDto = {
-      name: '1.country',
-      // description: `Rent domain: ${dto.params.name}.1.country`,
-      amount: +amountUsd,
-      successUrl,
-      cancelUrl,
-    };
-    const session = await this.stripeService.createCheckoutSession(checkoutDto);
-
-    const paymentDto: CreatePaymentDto = {
-      paymentType: PaymentType.checkout,
-      method: CheckoutMethod.rent,
-      sessionId: session.id,
-      userAddress,
-      amountUsd,
-      amountOne,
-      params,
-    };
-
-    await this.stripeService.savePayment(paymentDto);
-
-    this.logger.log(
-      `Created new payment session: ${session.id}, dto: ${JSON.stringify(dto)}`,
-    );
-
-    return {
-      amountUsd,
-      amountOne,
-      sessionId: session.id,
-      paymentUrl: session.url,
-    };
   }
 
   @Get('/checkout/success/:userId/:sessionId')
@@ -280,17 +225,13 @@ export class StripeController {
     return 'CANCEL';
   }
 
-  @Post('/create-payment-intent/one-country/rent')
+  @Post('/create-payment-intent/harmonyx')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentIntentRent(@Body() dto: OneCountryRentDto) {
-    const { userAddress, params } = dto;
+  async createPaymentIntentHarmonyX(@Body() dto: HarmonyXIntentDto) {
+    const { userId, amountUsd } = dto;
 
     this.logger.log(
       `Received create payment intent request: ${JSON.stringify(dto)}`,
-    );
-
-    const { amountOne, amountUsd } = await this.web3Service.validateDomainRent(
-      dto.params.domainName,
     );
 
     const paymentIntent = await this.stripeService.createPaymentIntent({
@@ -301,30 +242,44 @@ export class StripeController {
       paymentType: PaymentType.paymentIntent,
       method: CheckoutMethod.rent,
       sessionId: paymentIntent.id,
-      userAddress,
       amountUsd,
-      amountOne,
-      params,
+      amountCredits: '1',
+      params: {},
     };
 
     await this.stripeService.savePayment(paymentDto);
     return paymentIntent;
   }
 
-  @Get('/validate/rent/:domainName')
-  @ApiParam({
-    name: 'domainName',
-    required: true,
-    description: '1country domain name',
-    schema: { oneOf: [{ type: 'string' }] },
-  })
-  @ApiOkResponse({
-    type: StripePaymentEntity,
-  })
-  async validateRent(@Param() params) {
-    const { domainName } = params;
-    const data = await this.web3Service.validateDomainRent(domainName);
-    return data;
+  @Post('/payment-sheet')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createPaymentSheet() {
+    const userDto: CreateUserDto = {
+      appName: 'test_app',
+      userType: UserType.single,
+    };
+    const customer = await this.stripeService.createCustomer(userDto);
+    const ephemeralKey = await this.stripeService.stripe.ephemeralKeys.create(
+      { customer: customer.id },
+      { apiVersion: '2023-08-16' },
+    );
+    const paymentIntent = await this.stripeService.stripe.paymentIntents.create(
+      {
+        amount: 100,
+        currency: 'eur',
+        customer: customer.id,
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      },
+    );
+    return {
+      paymentIntent: paymentIntent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: customer.id,
+      publishableKey: this.configService.get('stripe.publishableKey'),
+    };
   }
 
   @Get('/payment/:sessionId')
@@ -354,7 +309,6 @@ export class StripeController {
     type: ListAllPaymentsResponseDto,
   })
   async getPayments(@Query() dto: ListAllPaymentsDto) {
-    const data = await this.stripeService.getPayments(dto);
-    return data;
+    return await this.stripeService.getPayments(dto);
   }
 }

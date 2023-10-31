@@ -1,8 +1,5 @@
 ## Harmony Payments Service
-Payments Service allows users to pay for 1.country web3 features with credit card / Apple Pay / Google Pay.
-
-Supported contract method:
-- rent
+Payments Service allows users to pay for Harmony X features with credit card / Apple Pay / Google Pay.
 
 ## Payments flow
 <img width="1429" alt="HarmonyPaymentFlow" src="https://user-images.githubusercontent.com/8803471/216304320-79a5dce7-5bd2-4ddb-8653-860f76810163.png">

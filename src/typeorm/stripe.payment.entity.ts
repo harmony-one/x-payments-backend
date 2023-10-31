@@ -65,13 +65,6 @@ export class StripePaymentEntity {
   status: PaymentStatus;
 
   @ApiProperty()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  txHash: string;
-
-  @ApiProperty()
   @IsString()
   @Column({
     type: 'varchar',
@@ -85,15 +78,7 @@ export class StripePaymentEntity {
     type: 'varchar',
     default: '0',
   })
-  amountOne: string;
-
-  @ApiProperty()
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  userAddress: string;
+  amountCredits: string;
 
   @ApiProperty()
   @IsObject()

@@ -8,11 +8,6 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
-export enum AppName {
-  telegram = 'telegram',
-  discord = 'discord',
-}
-
 export enum UserType {
   single = 'single',
   group = 'group',
@@ -31,33 +26,8 @@ export enum SubscriberStatus {
 }
 @Entity({ name: 'users' })
 export class UserEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ApiProperty()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  userId: string;
-
-  @ApiProperty()
-  @IsEnum(AppName)
-  @Column({
-    type: 'varchar',
-    enum: AppName,
-    default: AppName.telegram,
-  })
-  appName: AppName;
-
-  @ApiProperty()
-  @IsEnum(UserType)
-  @Column({
-    type: 'varchar',
-    enum: UserType,
-    default: UserType.single,
-  })
-  userType: UserType;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ApiProperty()
   @IsString()
@@ -70,50 +40,10 @@ export class UserEntity {
   @ApiProperty()
   @IsString()
   @Column({
-    type: 'varchar',
-    default: '',
+    type: 'integer',
+    default: 0,
   })
-  userAddress: string;
-
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  privateKey: string;
-
-  @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updatedAt' })
-  updatedAt: Date;
-}
-
-@Entity({ name: 'user_payments' })
-export class UserPaymentEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ApiProperty()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  userId: string;
-
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '0',
-  })
-  amount: string;
-
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  txHash: string;
+  balance: number;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
@@ -157,7 +87,7 @@ export class UserSubscriptionEntity {
 
   @IsString()
   @Column({
-    type: 'number',
+    type: 'integer',
     default: 0,
   })
   quantity: number;
