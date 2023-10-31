@@ -12,16 +12,15 @@ import {
 } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create.user.dto';
 import { UserEntity } from '../typeorm';
-import { PayDto } from "./dto/pay.dto";
+import { PayDto } from './dto/pay.dto';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('/id/:userId')
+  @Get('/:userId')
   @ApiParam({
     name: 'userId',
     required: true,

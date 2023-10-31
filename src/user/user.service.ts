@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { DataSource } from 'typeorm';
 import { UserEntity } from '../typeorm';
 import { CreateUserDto } from './dto/create.user.dto';
@@ -33,20 +33,26 @@ export class UserService {
   }
 
   async pay(dto: PayDto): Promise<UserEntity> {
-    const { userId } = dto;
+    const { userId, amount } = dto;
     const user = await this.getUserById(userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const result = await this.dataSource.manager.update(
+    const newUserBalance = user.balance - amount;
+
+    if (newUserBalance < 0) {
+      throw new BadRequestException('Not enough balance');
+    }
+
+    await this.dataSource.manager.update(
       UserEntity,
       {
         id: userId,
       },
       {
-        balance: 1,
+        balance: newUserBalance,
       },
     );
     return this.getUserById(userId);
