@@ -4,7 +4,7 @@ export default () => ({
   apiKey: process.env.API_KEY || '',
   version: process.env.npm_package_version || '0.0.1',
   name: process.env.npm_package_name || '',
-  port: parseInt(process.env.PORT, 10) || 8080,
+  port: parseInt(process.env.PORT, 10) || 3000,
   initialCreditsAmount: parseInt(process.env.INITIAL_CREDITS_AMOUNT, 10) || 100,
   stripe: {
     publishableKey: process.env.STRIPE_PUB_KEY || '',
