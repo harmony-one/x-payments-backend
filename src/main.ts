@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
 declare const module: any;
 
 async function bootstrap() {
+  const logger = new Logger('AppBootstrap');
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Required to verify Stripe Webhook event signature (https://stripe.com/docs/webhooks/signatures)
   });
@@ -35,7 +36,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(configService.get('port'));
+  const port = configService.get('port');
+  await app.listen(port);
+  logger.log(`App is listening on ${port}`);
 
   if (module.hot) {
     module.hot.accept();
