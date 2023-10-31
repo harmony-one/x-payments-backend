@@ -14,7 +14,6 @@ import {
   ListAllPaymentsDto,
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
-import { Web3Service } from '../web3/web3.service';
 import { CreateUserDto } from 'src/user/dto/create.user.dto';
 import {
   SubscriberStatus,

@@ -25,7 +25,6 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { Web3Service } from '../web3/web3.service';
 import { ConfigService } from '@nestjs/config';
 import {
   CheckoutMethod,
@@ -49,7 +48,6 @@ export class StripeController {
   private readonly logger = new Logger(StripeController.name);
   constructor(
     private readonly stripeService: StripeService,
-    private readonly web3Service: Web3Service,
     private readonly configService: ConfigService,
   ) {}
 

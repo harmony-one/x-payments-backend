@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserEntity } from '../typeorm';
 import { CreateUserDto } from './dto/create.user.dto';
-import { Web3Service } from '../web3/web3.service';
 import { StripeService } from 'src/stripe/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { UserType } from '../typeorm/user.entity';
@@ -11,7 +10,6 @@ import { UserType } from '../typeorm/user.entity';
 export class UserService {
   constructor(
     private dataSource: DataSource,
-    private readonly web3Service: Web3Service,
     private readonly stripeService: StripeService,
     private readonly configService: ConfigService,
   ) {}
