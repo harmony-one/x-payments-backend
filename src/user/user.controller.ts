@@ -1,12 +1,10 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
   NotFoundException,
   Param,
   Post,
-  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -30,7 +28,7 @@ export class UserController {
   @ApiOkResponse({
     type: UserEntity,
   })
-  async getUserById(@Param() params) {
+  async getUserById(@Param() params: { userId: string }) {
     const { userId } = params;
 
     const user = await this.userService.getUserById(userId);
@@ -51,7 +49,7 @@ export class UserController {
   @ApiOkResponse({
     type: Number,
   })
-  async getUserBalance(@Param() params) {
+  async getUserBalance(@Param() params: { userId: string }) {
     const { userId } = params;
 
     const user = await this.userService.getUserById(userId);

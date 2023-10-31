@@ -1,7 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserEntity } from '../typeorm';
-import { CreateUserDto } from './dto/create.user.dto';
 import { StripeService } from 'src/stripe/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { PayDto } from './dto/pay.dto';
