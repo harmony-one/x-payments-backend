@@ -71,4 +71,10 @@ export class UserController {
   async pay(@Body() dto: PayDto): Promise<UserEntity> {
     return await this.userService.pay(dto);
   }
+
+  @Post('/refill')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async refill(@Body() dto: PayDto): Promise<UserEntity> {
+    return await this.userService.refill(dto);
+  }
 }

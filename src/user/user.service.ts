@@ -60,4 +60,31 @@ export class UserService {
     );
     return this.getUserById(userId);
   }
+
+  async refill(dto: PayDto): Promise<UserEntity> {
+    const { userId, amount } = dto;
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const maxAmount = 1000000;
+    if (amount > maxAmount) {
+      throw new BadRequestException(`Max refill amount: ${maxAmount}`);
+    }
+
+    const newUserBalance = user.balance + amount;
+
+    await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        balance: newUserBalance,
+      },
+    );
+    return this.getUserById(userId);
+  }
 }
