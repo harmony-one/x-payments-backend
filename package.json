@@ -27,6 +27,7 @@
     "@nestjs/schedule": "^2.2.0",
     "@nestjs/swagger": "^6.1.4",
     "@nestjs/typeorm": "^9.0.1",
+    "app-store-server-api": "^0.13.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "date-fns": "^2.30.0",

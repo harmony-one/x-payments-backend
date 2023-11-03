@@ -10,6 +10,7 @@ import { StripeService } from './stripe/stripe.service';
 import entities from './typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { UserModule } from './user/user.module';
+import { AppstoreModule } from './appstore/appstore.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UserModule } from './user/user.module';
     HttpModule,
     ScheduleModule.forRoot(),
     UserModule,
+    AppstoreModule,
   ],
   controllers: [AppController, StripeController],
   providers: [AppService, StripeService],
