@@ -7,13 +7,13 @@ import {
   Param,
   Post,
   UsePipes,
-  ValidationPipe
-} from "@nestjs/common";
+  ValidationPipe,
+} from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
-import { CreateUserDto } from "./dto/create.user.dto";
+import { CreateUserDto } from './dto/create.user.dto';
 
 @ApiTags('users')
 @Controller('users')
