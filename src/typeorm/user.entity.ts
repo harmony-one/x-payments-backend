@@ -35,7 +35,7 @@ export class UserEntity {
     type: 'varchar',
     default: '',
   })
-  customerId: string;
+  appleId: string;
 
   @ApiProperty()
   @IsString()

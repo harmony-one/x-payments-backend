@@ -251,36 +251,36 @@ export class StripeController {
     return paymentIntent;
   }
 
-  @Post('/payment-sheet')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async createPaymentSheet() {
-    const userDto: CreateUserDto = {
-      appName: 'test_app',
-      userType: UserType.single,
-    };
-    const customer = await this.stripeService.createCustomer(userDto);
-    const ephemeralKey = await this.stripeService.stripe.ephemeralKeys.create(
-      { customer: customer.id },
-      { apiVersion: '2023-08-16' },
-    );
-    const paymentIntent = await this.stripeService.stripe.paymentIntents.create(
-      {
-        amount: 100,
-        currency: 'eur',
-        customer: customer.id,
-        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
-        automatic_payment_methods: {
-          enabled: true,
-        },
-      },
-    );
-    return {
-      paymentIntent: paymentIntent.client_secret,
-      ephemeralKey: ephemeralKey.secret,
-      customer: customer.id,
-      publishableKey: this.configService.get('stripe.publishableKey'),
-    };
-  }
+  // @Post('/payment-sheet')
+  // @UsePipes(new ValidationPipe({ transform: true }))
+  // async createPaymentSheet() {
+  //   const userDto: CreateUserDto = {
+  //     appName: 'test_app',
+  //     userType: UserType.single,
+  //   };
+  //   const customer = await this.stripeService.createCustomer(userDto);
+  //   const ephemeralKey = await this.stripeService.stripe.ephemeralKeys.create(
+  //     { customer: customer.id },
+  //     { apiVersion: '2023-08-16' },
+  //   );
+  //   const paymentIntent = await this.stripeService.stripe.paymentIntents.create(
+  //     {
+  //       amount: 100,
+  //       currency: 'eur',
+  //       customer: customer.id,
+  //       // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+  //       automatic_payment_methods: {
+  //         enabled: true,
+  //       },
+  //     },
+  //   );
+  //   return {
+  //     paymentIntent: paymentIntent.client_secret,
+  //     ephemeralKey: ephemeralKey.secret,
+  //     customer: customer.id,
+  //     publishableKey: this.configService.get('stripe.publishableKey'),
+  //   };
+  // }
 
   @Get('/payment/:sessionId')
   @ApiParam({
