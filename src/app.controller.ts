@@ -16,28 +16,28 @@ export class AppController {
     return 'OK';
   }
 
-  @Get('/config')
-  getConfig() {
-    return {
-      stripe: {
-        publishableKey: this.configService.get('stripe.publishableKey'),
-        apiVersion: this.configService.get('stripe.apiVersion'),
-      },
-      web3: {
-        rpcUrl: this.configService.get('web3.rpcUrl'),
-      },
-    };
-  }
+  // @Get('/config')
+  // getConfig() {
+  //   return {
+  //     stripe: {
+  //       publishableKey: this.configService.get('stripe.publishableKey'),
+  //       apiVersion: this.configService.get('stripe.apiVersion'),
+  //     },
+  //     web3: {
+  //       rpcUrl: this.configService.get('web3.rpcUrl'),
+  //     },
+  //   };
+  // }
 
-  @Get('test/:message')
-  @ApiParam({
-    name: 'message',
-    required: true,
-    description: 'message',
-    schema: { oneOf: [{ type: 'string' }] },
-  })
-  async getUserById(@Param() params: { message: string }) {
-    const { message } = params;
-    console.log('Test message: ', message);
-  }
+  // @Get('test/:message')
+  // @ApiParam({
+  //   name: 'message',
+  //   required: true,
+  //   description: 'message',
+  //   schema: { oneOf: [{ type: 'string' }] },
+  // })
+  // async getUserById(@Param() params: { message: string }) {
+  //   const { message } = params;
+  //   console.log('Test message: ', message);
+  // }
 }

@@ -14,6 +14,7 @@ import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
+import { RefillDto } from './dto/refill.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -41,6 +42,27 @@ export class UserController {
     return user;
   }
 
+  // @Get('/:userId/balance')
+  // @ApiParam({
+  //   name: 'userId',
+  //   required: true,
+  //   description: 'User uuid',
+  //   schema: { oneOf: [{ type: 'string' }] },
+  // })
+  // @ApiOkResponse({
+  //   type: Number,
+  // })
+  // async getUserBalance(@Param() params: { userId: string }) {
+  //   const { userId } = params;
+  //
+  //   const user = await this.userService.getUserById(userId);
+  //   if (!user) {
+  //     throw new NotFoundException('User not found');
+  //   }
+  //
+  //   return user.balance;
+  // }
+
   @Get('/appleId/:appleId')
   @ApiParam({
     name: 'appleId',
@@ -62,25 +84,23 @@ export class UserController {
     return user;
   }
 
-  @Get('/:userId/balance')
+  @Get('/deviceId/:deviceId')
   @ApiParam({
-    name: 'userId',
+    name: 'deviceId',
     required: true,
-    description: 'User uuid',
+    description: 'User deviceId',
     schema: { oneOf: [{ type: 'string' }] },
   })
   @ApiOkResponse({
-    type: Number,
+    type: UserEntity,
   })
-  async getUserBalance(@Param() params: { userId: string }) {
-    const { userId } = params;
-
-    const user = await this.userService.getUserById(userId);
+  async getUserByDeviceId(@Param() params: { deviceId: string }) {
+    const { deviceId } = params;
+    const user = await this.userService.getUserByDeviceId(deviceId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    return user.balance;
+    return user;
   }
 
   @Post('/create')
@@ -89,10 +109,24 @@ export class UserController {
     type: UserEntity,
   })
   async createUser(@Body() dto: CreateUserDto): Promise<UserEntity> {
-    const user = await this.userService.getUserByAppleId(dto.appleId);
-    if (user) {
-      throw new BadRequestException('User with given appleId already exists');
+    const { deviceId, appleId } = dto;
+
+    if (appleId) {
+      const user = await this.userService.getUserByAppleId(appleId);
+      if (user) {
+        throw new BadRequestException('User with given appleId already exists');
+      }
     }
+
+    if (deviceId) {
+      const user = await this.userService.getUserByDeviceId(deviceId);
+      if (user) {
+        throw new BadRequestException(
+          'User with given deviceId already exists',
+        );
+      }
+    }
+
     return await this.userService.createUser(dto);
   }
 
@@ -104,7 +138,7 @@ export class UserController {
 
   @Post('/refill')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async refill(@Body() dto: PayDto): Promise<UserEntity> {
+  async refill(@Body() dto: RefillDto): Promise<UserEntity> {
     return await this.userService.refill(dto);
   }
 }

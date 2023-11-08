@@ -35,6 +35,14 @@ export class UserEntity {
     type: 'varchar',
     default: '',
   })
+  deviceId: string;
+
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
   appleId: string;
 
   @ApiProperty()

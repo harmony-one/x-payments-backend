@@ -19,12 +19,13 @@ import {
 import { StripeService } from './stripe.service';
 import { CreateCheckoutSessionDto } from './dto/checkout.dto';
 import {
+  ApiExcludeController,
   ApiExcludeEndpoint,
   ApiOkResponse,
   ApiParam,
   ApiSecurity,
-  ApiTags,
-} from '@nestjs/swagger';
+  ApiTags
+} from "@nestjs/swagger";
 import { ConfigService } from '@nestjs/config';
 import {
   CheckoutMethod,
@@ -38,11 +39,11 @@ import {
   ListAllPaymentsResponseDto,
 } from './dto/payment.dto';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
-import { SubscriberStatus, UserType } from 'src/typeorm/user.entity';
+import { SubscriberStatus } from 'src/typeorm/user.entity';
 import { HarmonyXIntentDto } from './dto/harmonyx.dto';
-import { CreateUserDto } from '../user/dto/create.user.dto';
 
 @ApiTags('stripe')
+@ApiExcludeController()
 @Controller('/stripe')
 export class StripeController {
   private readonly logger = new Logger(StripeController.name);
