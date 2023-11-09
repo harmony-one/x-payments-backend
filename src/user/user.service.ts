@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
+import { AppStorePurchaseDto } from "./dto/purchase.dto";
 
 @Injectable()
 export class UserService {
@@ -99,6 +100,21 @@ export class UserService {
       },
       {
         balance: newUserBalance,
+      },
+    );
+    return this.getUserById(userId);
+  }
+
+  async appStorePurchase(dto: AppStorePurchaseDto): Promise<UserEntity> {
+    const { userId, originalTransactionId } = dto;
+
+    await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        originalTransactionId,
       },
     );
     return this.getUserById(userId);

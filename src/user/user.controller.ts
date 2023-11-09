@@ -15,6 +15,7 @@ import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
+import { AppStorePurchaseDto } from './dto/purchase.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -140,5 +141,17 @@ export class UserController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async refill(@Body() dto: RefillDto): Promise<UserEntity> {
     return await this.userService.refill(dto);
+  }
+
+  @Post('/appStorePurchase')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async appStorePurchase(
+    @Body() dto: AppStorePurchaseDto,
+  ): Promise<UserEntity> {
+    const user = await this.userService.getUserById(dto.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return await this.userService.appStorePurchase(dto);
   }
 }
