@@ -26,4 +26,7 @@ export default () => ({
     bundleId: process.env.APP_STORE_APP_BUNDLE_ID || '',
     originalTxId: process.env.APP_STORE_ORIGINAL_TX_ID || '',
   },
+  jwt: {
+    secret: process.env.JWT_SECRET || '',
+  },
 });
