@@ -148,10 +148,13 @@ export class UserController {
   async appStorePurchase(
     @Body() dto: AppStorePurchaseDto,
   ): Promise<UserEntity> {
-    const user = await this.userService.getUserById(dto.userId);
+    const { deviceId } = dto;
+
+    const user = await this.userService.getUserByDeviceId(deviceId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      await this.createUser({ deviceId });
     }
+
     return await this.userService.appStorePurchase(dto);
   }
 }

@@ -5,10 +5,10 @@ export class CreateUserDto {
   @IsString()
   @ApiProperty()
   @IsOptional()
-  appleId: string;
+  appleId?: string;
 
   @IsString()
   @ApiProperty()
   @IsOptional()
-  deviceId: string;
+  deviceId?: string;
 }
