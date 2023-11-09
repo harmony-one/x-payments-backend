@@ -16,6 +16,7 @@ import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto } from './dto/purchase.dto';
+import { UpdateDto } from "./dto/update.dto";
 
 @ApiTags('users')
 @Controller('users')
@@ -156,5 +157,27 @@ export class UserController {
     }
 
     return await this.userService.appStorePurchase(dto);
+  }
+
+  @Post('/:userId/update')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateUser(
+    @Param() params: { userId: string },
+    @Body() dto: UpdateDto,
+  ): Promise<UserEntity> {
+    const { userId } = params;
+
+    const user = await this.userService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.userService.updateUser(userId, dto);
   }
 }

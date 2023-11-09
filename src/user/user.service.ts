@@ -10,6 +10,7 @@ import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto } from './dto/purchase.dto';
+import { UpdateDto } from "./dto/update.dto";
 
 @Injectable()
 export class UserService {
@@ -118,5 +119,29 @@ export class UserService {
       },
     );
     return this.getUserByDeviceId(deviceId);
+  }
+
+  async updateUser(userId: string, dto: UpdateDto): Promise<UserEntity> {
+    const { deviceId, appleId } = dto;
+
+    const partialEntity: { deviceId?: string, appleId?: string } = {};
+
+    if (deviceId) {
+      partialEntity.deviceId = deviceId;
+    }
+    if (appleId) {
+      partialEntity.appleId = appleId;
+    }
+
+    await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        ...partialEntity,
+      },
+    );
+    return this.getUserById(userId);
   }
 }
