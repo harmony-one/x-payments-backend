@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AppStoreServerAPI, Environment } from 'app-store-server-api';
+import {
+  AppStoreServerAPI,
+  decodeTransaction,
+  Environment,
+} from 'app-store-server-api';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -17,14 +21,10 @@ export class AppstoreService {
       appStoreBundleId,
       Environment.Sandbox,
     );
-    // this.test().catch((e) => {
-    //   console.log('e', e);
-    // });
   }
 
-  async test() {
-    await this.api.getTransactionHistory(
-      this.configService.get('appStore.originalTxId'),
-    );
+  async decodeTransaction(transactionId: string) {
+    const txSigned = await this.api.getTransactionInfo(transactionId);
+    return await decodeTransaction(txSigned.signedTransactionInfo);
   }
 }

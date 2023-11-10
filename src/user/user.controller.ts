@@ -9,19 +9,23 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeEndpoint, ApiOkResponse, ApiParam, ApiTags } from "@nestjs/swagger";
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto } from './dto/purchase.dto';
-import { UpdateDto } from "./dto/update.dto";
+import { UpdateDto } from './dto/update.dto';
+import { AppstoreService } from '../appstore/appstore.service';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly appstoreService: AppstoreService,
+  ) {}
 
   @Get('/:userId')
   @ApiParam({
@@ -132,31 +136,39 @@ export class UserController {
     return await this.userService.createUser(dto);
   }
 
-  @Post('/pay')
+  @Post('/withdraw')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async pay(@Body() dto: PayDto): Promise<UserEntity> {
-    return await this.userService.pay(dto);
+  async withdraw(@Body() dto: PayDto): Promise<UserEntity> {
+    return await this.userService.withdraw(dto);
   }
 
-  @Post('/refill')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async refill(@Body() dto: RefillDto): Promise<UserEntity> {
-    return await this.userService.refill(dto);
-  }
+  // @Post('/refill')
+  // @UsePipes(new ValidationPipe({ transform: true }))
+  // async refill(@Body() dto: RefillDto): Promise<UserEntity> {
+  //   return await this.userService.refill(dto);
+  // }
 
-  @Post('/appStorePurchase')
+  @Post('/purchase')
   @UsePipes(new ValidationPipe({ transform: true }))
   async appStorePurchase(
     @Body() dto: AppStorePurchaseDto,
   ): Promise<UserEntity> {
-    const { deviceId } = dto;
+    const { userId, transactionId } = dto;
 
-    const user = await this.userService.getUserByDeviceId(deviceId);
+    const user = await this.userService.getUserById(userId);
     if (!user) {
-      await this.createUser({ deviceId });
+      throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    return await this.userService.appStorePurchase(dto);
+    const transaction = await this.appstoreService.decodeTransaction(
+      transactionId,
+    );
+
+    // TODO: get from productId
+    const amount = 100;
+    await this.userService.insertAppStorePurchase(dto, transaction);
+    await this.userService.refill({ userId, amount });
+    return await this.userService.getUserById(userId);
   }
 
   @Post('/:userId/update')

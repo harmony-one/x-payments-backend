@@ -4,13 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserEntity } from '../typeorm';
+import { PurchaseEntity, UserEntity } from "../typeorm";
 import { ConfigService } from '@nestjs/config';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto } from './dto/purchase.dto';
-import { UpdateDto } from "./dto/update.dto";
+import { UpdateDto } from './dto/update.dto';
+import { JWSTransactionDecodedPayload } from "app-store-server-api/dist/types/Models";
 
 @Injectable()
 export class UserService {
@@ -53,7 +54,7 @@ export class UserService {
     return result.raw[0];
   }
 
-  async pay(dto: PayDto): Promise<UserEntity> {
+  async withdraw(dto: PayDto): Promise<UserEntity> {
     const { userId, amount } = dto;
     const user = await this.getUserById(userId);
 
@@ -106,19 +107,21 @@ export class UserService {
     return this.getUserById(userId);
   }
 
-  async appStorePurchase(dto: AppStorePurchaseDto): Promise<UserEntity> {
-    const { deviceId, originalTransactionId } = dto;
+  async insertAppStorePurchase(
+    dto: AppStorePurchaseDto,
+    transaction: JWSTransactionDecodedPayload,
+  ): Promise<UserEntity> {
+    const { userId, transactionId } = dto;
 
-    await this.dataSource.manager.update(
-      UserEntity,
-      {
-        deviceId,
-      },
-      {
-        originalTransactionId,
-      },
-    );
-    return this.getUserByDeviceId(deviceId);
+    const result = await this.dataSource.manager.insert(PurchaseEntity, {
+      userId,
+      transactionId,
+      productId: transaction.productId,
+      quantity: transaction.quantity,
+      transaction,
+    });
+
+    return result.raw[0];
   }
 
   async updateUser(userId: string, dto: UpdateDto): Promise<UserEntity> {

@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsString, IsUUID } from 'class-validator';
 
 export class AppStorePurchaseDto {
   @ApiProperty()
-  @IsString()
-  deviceId: string;
+  @IsUUID()
+  userId: string;
 
   @ApiProperty()
   @IsString()
-  originalTransactionId: string;
+  transactionId: string;
 }

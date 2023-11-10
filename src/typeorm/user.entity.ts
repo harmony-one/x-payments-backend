@@ -48,14 +48,6 @@ export class UserEntity {
   @ApiProperty()
   @IsString()
   @Column({
-    type: 'varchar',
-    default: '',
-  })
-  originalTransactionId: string;
-
-  @ApiProperty()
-  @IsString()
-  @Column({
     type: 'integer',
     default: 0,
   })

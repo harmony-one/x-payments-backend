@@ -2,6 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppstoreService } from './appstore.service';
 
 @Module({
-  providers: [AppstoreService]
+  providers: [AppstoreService],
 })
 export class AppstoreModule {}
