@@ -6,16 +6,16 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiOkResponse, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
-import { RefillDto } from './dto/refill.dto';
-import { AppStorePurchaseDto } from './dto/purchase.dto';
+import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateDto } from './dto/update.dto';
 import { AppstoreService } from '../appstore/appstore.service';
 
@@ -48,26 +48,30 @@ export class UserController {
     return user;
   }
 
-  // @Get('/:userId/balance')
-  // @ApiParam({
-  //   name: 'userId',
-  //   required: true,
-  //   description: 'User uuid',
-  //   schema: { oneOf: [{ type: 'string' }] },
-  // })
-  // @ApiOkResponse({
-  //   type: Number,
-  // })
-  // async getUserBalance(@Param() params: { userId: string }) {
-  //   const { userId } = params;
-  //
-  //   const user = await this.userService.getUserById(userId);
-  //   if (!user) {
-  //     throw new NotFoundException('User not found');
-  //   }
-  //
-  //   return user.balance;
-  // }
+  @Get('/:userId/purchases')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User uuid',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: Number,
+  })
+  async getUserPurchases(
+    @Param() params: { userId: string },
+    @Query() dto: PurchaseListDto,
+  ) {
+    const { userId } = params;
+
+    const user = await this.userService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.userService.getUserPayments(userId, dto);
+  }
 
   @Get('/appleId/:appleId')
   @ApiParam({

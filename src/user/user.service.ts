@@ -4,14 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { PurchaseEntity, UserEntity } from "../typeorm";
+import { PurchaseEntity, UserEntity } from '../typeorm';
 import { ConfigService } from '@nestjs/config';
 import { PayDto } from './dto/pay.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
-import { AppStorePurchaseDto } from './dto/purchase.dto';
+import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateDto } from './dto/update.dto';
-import { JWSTransactionDecodedPayload } from "app-store-server-api/dist/types/Models";
+import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
 
 @Injectable()
 export class UserService {
@@ -127,7 +127,7 @@ export class UserService {
   async updateUser(userId: string, dto: UpdateDto): Promise<UserEntity> {
     const { deviceId, appleId } = dto;
 
-    const partialEntity: { deviceId?: string, appleId?: string } = {};
+    const partialEntity: { deviceId?: string; appleId?: string } = {};
 
     if (deviceId) {
       partialEntity.deviceId = deviceId;
@@ -146,5 +146,28 @@ export class UserService {
       },
     );
     return this.getUserById(userId);
+  }
+
+  async getUserPayments(userId: string, dto: PurchaseListDto) {
+    const { offset, limit, ...rest } = dto;
+
+    const [items, count] = await this.dataSource.manager.findAndCount(
+      PurchaseEntity,
+      {
+        where: {
+          ...rest,
+        },
+        skip: offset,
+        take: limit,
+        order: {
+          id: 'desc',
+        },
+      },
+    );
+
+    return {
+      items,
+      count,
+    };
   }
 }
