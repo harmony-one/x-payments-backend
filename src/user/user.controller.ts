@@ -13,7 +13,7 @@ import {
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
-import { PayDto } from './dto/pay.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateDto } from './dto/update.dto';
@@ -140,10 +140,20 @@ export class UserController {
     return await this.userService.createUser(dto);
   }
 
-  @Post('/withdraw')
+  @Post('/:userId/withdraw')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async withdraw(@Body() dto: PayDto): Promise<UserEntity> {
-    return await this.userService.withdraw(dto);
+  async withdraw(
+    @Param() params: { userId: string },
+    @Body() dto: WithdrawDto,
+  ): Promise<UserEntity> {
+    const creditsAmount = Math.round(dto.tokensAmount / 10);
+    return await this.userService.withdraw(params.userId, dto, creditsAmount);
   }
 
   // @Post('/refill')
@@ -153,11 +163,19 @@ export class UserController {
   // }
 
   @Post('/purchase')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
   @UsePipes(new ValidationPipe({ transform: true }))
   async appStorePurchase(
+    @Param() params: { userId: string },
     @Body() dto: AppStorePurchaseDto,
   ): Promise<UserEntity> {
-    const { userId, transactionId } = dto;
+    const { userId } = params;
+    const { transactionId } = dto;
 
     const user = await this.userService.getUserById(userId);
     if (!user) {
@@ -170,7 +188,7 @@ export class UserController {
 
     // TODO: get from productId
     const amount = 100;
-    await this.userService.insertAppStorePurchase(dto, transaction);
+    await this.userService.insertAppStorePurchase(userId, dto, transaction);
     await this.userService.refill({ userId, amount });
     return await this.userService.getUserById(userId);
   }

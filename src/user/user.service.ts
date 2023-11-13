@@ -4,9 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { PurchaseEntity, UserEntity } from '../typeorm';
+import { PurchaseEntity, UserEntity, WithdrawEntity } from '../typeorm';
 import { ConfigService } from '@nestjs/config';
-import { PayDto } from './dto/pay.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
@@ -54,17 +54,22 @@ export class UserService {
     return result.raw[0];
   }
 
-  async withdraw(dto: PayDto): Promise<UserEntity> {
-    const { userId, amount } = dto;
+  async withdraw(
+    userId: string,
+    dto: WithdrawDto,
+    creditsAmount: number,
+  ): Promise<UserEntity> {
+    const { tokensAmount } = dto;
     const user = await this.getUserById(userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const newUserBalance = user.balance - amount;
+    const balanceBefore = user.balance;
+    const balanceAfter = balanceBefore - creditsAmount;
 
-    if (newUserBalance < 0) {
+    if (balanceAfter < 0) {
       throw new BadRequestException('Not enough balance');
     }
 
@@ -74,9 +79,18 @@ export class UserService {
         id: userId,
       },
       {
-        balance: newUserBalance,
+        balance: balanceAfter,
       },
     );
+
+    await this.dataSource.manager.insert(WithdrawEntity, {
+      userId,
+      creditsAmount,
+      tokensAmount,
+      balanceBefore,
+      balanceAfter,
+    });
+
     return this.getUserById(userId);
   }
 
@@ -108,10 +122,11 @@ export class UserService {
   }
 
   async insertAppStorePurchase(
+    userId: string,
     dto: AppStorePurchaseDto,
     transaction: JWSTransactionDecodedPayload,
   ): Promise<UserEntity> {
-    const { userId, transactionId } = dto;
+    const { transactionId } = dto;
 
     const result = await this.dataSource.manager.insert(PurchaseEntity, {
       userId,
@@ -155,6 +170,7 @@ export class UserService {
       PurchaseEntity,
       {
         where: {
+          id: userId,
           ...rest,
         },
         skip: offset,
