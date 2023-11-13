@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   NotFoundException,
   Param,
   Post,
+  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -12,11 +14,18 @@ import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { PayDto } from './dto/pay.dto';
+import { CreateUserDto } from './dto/create.user.dto';
+import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
+import { UpdateDto } from './dto/update.dto';
+import { AppstoreService } from '../appstore/appstore.service';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly appstoreService: AppstoreService,
+  ) {}
 
   @Get('/:userId')
   @ApiParam({
@@ -39,7 +48,8 @@ export class UserController {
     return user;
   }
 
-  @Get('/:userId/balance')
+  @Get('/:userId/purchases')
+  @UsePipes(new ValidationPipe({ transform: true }))
   @ApiParam({
     name: 'userId',
     required: true,
@@ -49,7 +59,10 @@ export class UserController {
   @ApiOkResponse({
     type: Number,
   })
-  async getUserBalance(@Param() params: { userId: string }) {
+  async getUserPurchases(
+    @Param() params: { userId: string },
+    @Query() dto: PurchaseListDto,
+  ) {
     const { userId } = params;
 
     const user = await this.userService.getUserById(userId);
@@ -57,24 +70,130 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    return user.balance;
+    return await this.userService.getUserPayments(userId, dto);
+  }
+
+  @Get('/appleId/:appleId')
+  @ApiParam({
+    name: 'appleId',
+    required: true,
+    description: 'User appleId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: UserEntity,
+  })
+  async getUserByAppleId(@Param() params: { appleId: string }) {
+    const { appleId } = params;
+
+    const user = await this.userService.getUserByAppleId(appleId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  @Get('/deviceId/:deviceId')
+  @ApiParam({
+    name: 'deviceId',
+    required: true,
+    description: 'User deviceId',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @ApiOkResponse({
+    type: UserEntity,
+  })
+  async getUserByDeviceId(@Param() params: { deviceId: string }) {
+    const { deviceId } = params;
+    const user = await this.userService.getUserByDeviceId(deviceId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   @Post('/create')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async createUser(): Promise<UserEntity> {
-    return await this.userService.createUser();
+  @ApiOkResponse({
+    type: UserEntity,
+  })
+  async createUser(@Body() dto: CreateUserDto): Promise<UserEntity> {
+    const { deviceId, appleId } = dto;
+
+    if (appleId) {
+      const user = await this.userService.getUserByAppleId(appleId);
+      if (user) {
+        throw new BadRequestException('User with given appleId already exists');
+      }
+    }
+
+    if (deviceId) {
+      const user = await this.userService.getUserByDeviceId(deviceId);
+      if (user) {
+        throw new BadRequestException(
+          'User with given deviceId already exists',
+        );
+      }
+    }
+
+    return await this.userService.createUser(dto);
   }
 
-  @Post('/pay')
+  @Post('/withdraw')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async pay(@Body() dto: PayDto): Promise<UserEntity> {
-    return await this.userService.pay(dto);
+  async withdraw(@Body() dto: PayDto): Promise<UserEntity> {
+    return await this.userService.withdraw(dto);
   }
 
-  @Post('/refill')
+  // @Post('/refill')
+  // @UsePipes(new ValidationPipe({ transform: true }))
+  // async refill(@Body() dto: RefillDto): Promise<UserEntity> {
+  //   return await this.userService.refill(dto);
+  // }
+
+  @Post('/purchase')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async refill(@Body() dto: PayDto): Promise<UserEntity> {
-    return await this.userService.refill(dto);
+  async appStorePurchase(
+    @Body() dto: AppStorePurchaseDto,
+  ): Promise<UserEntity> {
+    const { userId, transactionId } = dto;
+
+    const user = await this.userService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    const transaction = await this.appstoreService.decodeTransaction(
+      transactionId,
+    );
+
+    // TODO: get from productId
+    const amount = 100;
+    await this.userService.insertAppStorePurchase(dto, transaction);
+    await this.userService.refill({ userId, amount });
+    return await this.userService.getUserById(userId);
+  }
+
+  @Post('/:userId/update')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateUser(
+    @Param() params: { userId: string },
+    @Body() dto: UpdateDto,
+  ): Promise<UserEntity> {
+    const { userId } = params;
+
+    const user = await this.userService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.userService.updateUser(userId, dto);
   }
 }

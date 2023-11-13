@@ -18,10 +18,14 @@ export default () => ({
   },
   web3: {
     rpcUrl: process.env.RPC_URL || 'https://api.harmony.one',
-    txConfirmTimeout: parseInt(process.env.TX_CONFIRM_TIMEOUT || '4000'),
   },
-  telegram: {
-    botApiKey: process.env.TG_BOT_API_KEY || '',
-    botHolderAddress: process.env.TG_BOT_HOLDER_ADDRESS || '',
+  appStore: {
+    key: process.env.APP_STORE_KEY || '',
+    keyId: process.env.APP_STORE_KEY_ID || '',
+    issuerId: process.env.APP_STORE_ISSUER_ID || '',
+    bundleId: process.env.APP_STORE_APP_BUNDLE_ID || '',
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET || '',
   },
 });
