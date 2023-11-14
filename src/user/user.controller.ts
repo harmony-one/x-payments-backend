@@ -162,7 +162,7 @@ export class UserController {
   //   return await this.userService.refill(dto);
   // }
 
-  @Post('/purchase')
+  @Post('/:userId/purchase')
   @ApiParam({
     name: 'userId',
     required: true,
@@ -186,10 +186,16 @@ export class UserController {
       transactionId,
     );
 
-    // TODO: get from productId
-    const amount = 100;
-    await this.userService.insertAppStorePurchase(userId, dto, transaction);
-    await this.userService.refill({ userId, amount });
+    const creditsAmount =
+      transaction.quantity *
+      this.userService.getCreditsByProductId(transaction.productId);
+    await this.userService.insertAppStorePurchase(
+      userId,
+      dto,
+      transaction,
+      creditsAmount,
+    );
+    await this.userService.refill({ userId, amount: creditsAmount });
     return await this.userService.getUserById(userId);
   }
 

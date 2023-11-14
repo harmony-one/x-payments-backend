@@ -94,6 +94,13 @@ export class UserService {
     return this.getUserById(userId);
   }
 
+  getCreditsByProductId(productId: string) {
+    if (productId === 'com.country.app.purchase.3day') {
+      return 499;
+    }
+    return 100;
+  }
+
   async refill(dto: RefillDto): Promise<UserEntity> {
     const { userId, amount } = dto;
     const user = await this.getUserById(userId);
@@ -125,6 +132,7 @@ export class UserService {
     userId: string,
     dto: AppStorePurchaseDto,
     transaction: JWSTransactionDecodedPayload,
+    creditsAmount: number,
   ): Promise<UserEntity> {
     const { transactionId } = dto;
 
@@ -132,7 +140,7 @@ export class UserService {
       userId,
       transactionId,
       productId: transaction.productId,
-      quantity: transaction.quantity,
+      creditsAmount,
       transaction,
     });
 

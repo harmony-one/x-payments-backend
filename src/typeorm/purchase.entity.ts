@@ -42,7 +42,7 @@ export class PurchaseEntity {
     type: 'integer',
     default: 0,
   })
-  quantity: number;
+  creditsAmount: number;
 
   @ApiProperty()
   @IsObject()
