@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -15,6 +16,7 @@ import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Mo
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     private dataSource: DataSource,
     private readonly configService: ConfigService,
@@ -23,6 +25,14 @@ export class UserService {
     return await this.dataSource.manager.findOne(UserEntity, {
       where: {
         id,
+      },
+    });
+  }
+
+  async getPurchaseByTransactionId(transactionId: string) {
+    return await this.dataSource.manager.findOne(PurchaseEntity, {
+      where: {
+        transactionId,
       },
     });
   }
@@ -51,7 +61,13 @@ export class UserService {
       balance,
     });
 
-    return result.raw[0];
+    const user = result.raw[0];
+
+    this.logger.log(
+      `Created new user, deviceId: ${dto.deviceId}, userId: ${user.id}`,
+    );
+
+    return user;
   }
 
   async withdraw(
@@ -96,7 +112,7 @@ export class UserService {
 
   getCreditsByProductId(productId: string) {
     if (productId === 'com.country.app.purchase.3day') {
-      return 499;
+      return 0;
     }
     return 100;
   }
@@ -144,6 +160,10 @@ export class UserService {
       transaction,
     });
 
+    this.logger.log(
+      `New purchase userId ${userId}, ${transaction.productId}, creditsAmount: ${creditsAmount}`,
+    );
+
     return result.raw[0];
   }
 
@@ -178,7 +198,6 @@ export class UserService {
       PurchaseEntity,
       {
         where: {
-          id: userId,
           ...rest,
         },
         skip: offset,

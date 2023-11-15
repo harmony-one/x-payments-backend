@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiParam, ApiTags } from '@nestjs/swagger';
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('app')
@@ -15,29 +15,4 @@ export class AppController {
   getStatus() {
     return 'OK';
   }
-
-  // @Get('/config')
-  // getConfig() {
-  //   return {
-  //     stripe: {
-  //       publishableKey: this.configService.get('stripe.publishableKey'),
-  //       apiVersion: this.configService.get('stripe.apiVersion'),
-  //     },
-  //     web3: {
-  //       rpcUrl: this.configService.get('web3.rpcUrl'),
-  //     },
-  //   };
-  // }
-
-  // @Get('test/:message')
-  // @ApiParam({
-  //   name: 'message',
-  //   required: true,
-  //   description: 'message',
-  //   schema: { oneOf: [{ type: 'string' }] },
-  // })
-  // async getUserById(@Param() params: { message: string }) {
-  //   const { message } = params;
-  //   console.log('Test message: ', message);
-  // }
 }

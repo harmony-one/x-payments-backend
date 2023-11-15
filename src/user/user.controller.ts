@@ -7,10 +7,11 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
 import { WithdrawDto } from './dto/withdraw.dto';
@@ -18,6 +19,7 @@ import { CreateUserDto } from './dto/create.user.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateDto } from './dto/update.dto';
 import { AppstoreService } from '../appstore/appstore.service';
+import { ApiKeyGuard } from '../auth/ApiKeyGuard';
 
 @ApiTags('users')
 @Controller('users')
@@ -48,8 +50,10 @@ export class UserController {
     return user;
   }
 
+  @ApiSecurity('X-API-KEY')
   @Get('/:userId/purchases')
   @UsePipes(new ValidationPipe({ transform: true }))
+  @UseGuards(ApiKeyGuard)
   @ApiParam({
     name: 'userId',
     required: true,
@@ -141,6 +145,8 @@ export class UserController {
   }
 
   @Post('/:userId/withdraw')
+  // @UseGuards(ApiKeyGuard)
+  // @ApiSecurity('X-API-KEY')
   @ApiParam({
     name: 'userId',
     required: true,
@@ -180,6 +186,12 @@ export class UserController {
     const user = await this.userService.getUserById(userId);
     if (!user) {
       throw new NotFoundException(`User with id ${userId} not found`);
+    }
+
+    const existedTransaction =
+      await this.userService.getPurchaseByTransactionId(transactionId);
+    if (existedTransaction) {
+      throw new BadRequestException('transcationId already exist');
     }
 
     const transaction = await this.appstoreService.decodeTransaction(

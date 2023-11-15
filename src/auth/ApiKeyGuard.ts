@@ -7,23 +7,8 @@ export class ApiKeyGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const headerApiKey = req.headers['x-api-key'];
+    const headerApiKey = req.headers['X-API-KEY'];
     const configApiKey = this.configService.get('apiKey');
-    if (configApiKey) {
-      return configApiKey === headerApiKey;
-    }
-    return true;
-  }
-}
-
-@Injectable()
-export class BotApiKeyGuard implements CanActivate {
-  constructor(private readonly configService: ConfigService) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
-    const headerApiKey = req.headers['x-api-key'];
-    const configApiKey = 'test';
     if (configApiKey) {
       return configApiKey === headerApiKey;
     }

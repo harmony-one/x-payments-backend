@@ -30,7 +30,7 @@ export class PurchaseListDto {
   @IsOptional()
   offset = 0;
 
-  @ApiProperty({ type: Number, required: false, default: 100 })
+  @ApiProperty({ type: Number, required: false, default: 100, maximum: 1000 })
   @Type(() => Number)
   @IsNumber()
   @IsOptional()

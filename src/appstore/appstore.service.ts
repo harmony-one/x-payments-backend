@@ -14,12 +14,16 @@ export class AppstoreService {
     const appStoreKeyId = configService.get('appStore.keyId');
     const appStoreIssuerId = configService.get('appStore.issuerId');
     const appStoreBundleId = configService.get('appStore.bundleId');
+    const appStoreEnvironment = configService.get('appStore.isProduction')
+      ? Environment.Production
+      : Environment.Sandbox;
+
     this.api = new AppStoreServerAPI(
       appStoreKey,
       appStoreKeyId,
       appStoreIssuerId,
       appStoreBundleId,
-      Environment.Sandbox,
+      appStoreEnvironment,
     );
   }
 
