@@ -198,6 +198,7 @@ export class UserService {
       PurchaseEntity,
       {
         where: {
+          id: userId,
           ...rest,
         },
         skip: offset,

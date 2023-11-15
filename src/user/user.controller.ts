@@ -145,8 +145,8 @@ export class UserController {
   }
 
   @Post('/:userId/withdraw')
-  // @UseGuards(ApiKeyGuard)
-  // @ApiSecurity('X-API-KEY')
+  @UseGuards(ApiKeyGuard)
+  @ApiSecurity('X-API-KEY')
   @ApiParam({
     name: 'userId',
     required: true,
