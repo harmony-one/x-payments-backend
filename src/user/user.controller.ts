@@ -144,7 +144,7 @@ export class UserController {
     return await this.userService.createUser(dto);
   }
 
-  @Post('/:userId/withdraw')
+  @Post('/:userId/spend')
   @UseGuards(ApiKeyGuard)
   @ApiSecurity('X-API-KEY')
   @ApiParam({
