@@ -190,11 +190,11 @@ export class UserController {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    // const existedTransaction =
-    //   await this.userService.getPurchaseByTransactionId(transactionId);
-    // if (existedTransaction) {
-    //   throw new BadRequestException('transactionId already exist');
-    // }
+    const existedTransaction =
+      await this.userService.getPurchaseByTransactionId(transactionId);
+    if (existedTransaction) {
+      throw new BadRequestException('transactionId already exist');
+    }
 
     const transaction = await this.appstoreService.decodeTransaction(
       transactionId,
