@@ -239,7 +239,7 @@ export class UserService {
   }
 
   async deleteUser(userId: string) {
-    return await this.dataSource.manager.update(
+    const res = await this.dataSource.manager.update(
       UserEntity,
       {
         id: userId,
@@ -248,5 +248,7 @@ export class UserService {
         status: UserStatus.deleted,
       },
     );
+    this.logger.log(`Deleted user ${userId}`);
+    return res;
   }
 }
