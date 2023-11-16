@@ -233,4 +233,10 @@ export class UserService {
       count,
     };
   }
+
+  async deleteUser(userId: string) {
+    return await this.dataSource.manager.delete(UserEntity, {
+      id: userId,
+    });
+  }
 }

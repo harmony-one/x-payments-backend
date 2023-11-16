@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Delete,
   Query,
   UseGuards,
   UsePipes,
@@ -232,5 +233,19 @@ export class UserController {
     }
 
     return await this.userService.getUserById(userId);
+  }
+
+  @Delete('/:userId')
+  @UseGuards(ApiKeyGuard)
+  @ApiSecurity('X-API-KEY')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async deleteUser(@Param() params: { userId: string }) {
+    return await this.userService.deleteUser(params.userId);
   }
 }
