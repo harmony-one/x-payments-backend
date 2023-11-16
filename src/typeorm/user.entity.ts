@@ -53,6 +53,9 @@ export class UserEntity {
   })
   balance: number;
 
+  @CreateDateColumn({ name: 'expirationDate' })
+  expirationDate: Date;
+
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 

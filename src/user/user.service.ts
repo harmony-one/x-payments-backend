@@ -117,6 +117,13 @@ export class UserService {
     return 100;
   }
 
+  getSubscriptionDaysByProductId(productId: string) {
+    if (productId === 'com.country.app.purchase.3day') {
+      return 3;
+    }
+    return 0;
+  }
+
   async refill(dto: RefillDto): Promise<UserEntity> {
     const { userId, amount } = dto;
     const user = await this.getUserById(userId);
@@ -165,6 +172,18 @@ export class UserService {
     );
 
     return result.raw[0];
+  }
+
+  async updateExpirationDate(userId: string, expirationDate: Date) {
+    await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        expirationDate,
+      },
+    );
   }
 
   async updateUser(userId: string, dto: UpdateDto): Promise<UserEntity> {

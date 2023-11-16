@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -17,13 +18,14 @@ import { UserEntity } from '../typeorm';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
-import { UpdateDto } from './dto/update.dto';
 import { AppstoreService } from '../appstore/appstore.service';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
+import * as moment from 'moment';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
+  private readonly logger = new Logger(UserController.name);
   constructor(
     private readonly userService: UserService,
     private readonly appstoreService: AppstoreService,
@@ -188,11 +190,11 @@ export class UserController {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    const existedTransaction =
-      await this.userService.getPurchaseByTransactionId(transactionId);
-    if (existedTransaction) {
-      throw new BadRequestException('transcationId already exist');
-    }
+    // const existedTransaction =
+    //   await this.userService.getPurchaseByTransactionId(transactionId);
+    // if (existedTransaction) {
+    //   throw new BadRequestException('transactionId already exist');
+    // }
 
     const transaction = await this.appstoreService.decodeTransaction(
       transactionId,
@@ -201,35 +203,34 @@ export class UserController {
     const creditsAmount =
       transaction.quantity *
       this.userService.getCreditsByProductId(transaction.productId);
+
     await this.userService.insertAppStorePurchase(
       userId,
       dto,
       transaction,
       creditsAmount,
     );
-    await this.userService.refill({ userId, amount: creditsAmount });
-    return await this.userService.getUserById(userId);
-  }
 
-  @Post('/:userId/update')
-  @ApiParam({
-    name: 'userId',
-    required: true,
-    description: 'User UUID',
-    schema: { oneOf: [{ type: 'string' }] },
-  })
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async updateUser(
-    @Param() params: { userId: string },
-    @Body() dto: UpdateDto,
-  ): Promise<UserEntity> {
-    const { userId } = params;
-
-    const user = await this.userService.getUserById(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (creditsAmount > 0) {
+      await this.userService.refill({ userId, amount: creditsAmount });
     }
 
-    return await this.userService.updateUser(userId, dto);
+    const subscriptionDays = this.userService.getSubscriptionDaysByProductId(
+      transaction.productId,
+    );
+
+    if (subscriptionDays > 0) {
+      let startDate = moment(user.expirationDate);
+      if (startDate.isBefore(moment())) {
+        startDate = moment();
+      }
+      const expirationDate = startDate.add(subscriptionDays, 'day').toDate();
+      await this.userService.updateExpirationDate(userId, expirationDate);
+      this.logger.log(
+        `User ${userId} purchased subscription for ${subscriptionDays} days, new expirationDate: ${expirationDate}`,
+      );
+    }
+
+    return await this.userService.getUserById(userId);
   }
 }
