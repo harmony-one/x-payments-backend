@@ -13,6 +13,7 @@ import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateDto } from './dto/update.dto';
 import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
+import { UserStatus } from '../typeorm/user.entity';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,7 @@ export class UserService {
     return await this.dataSource.manager.findOne(UserEntity, {
       where: {
         id,
+        status: UserStatus.active,
       },
     });
   }
@@ -41,6 +43,7 @@ export class UserService {
     return await this.dataSource.manager.findOne(UserEntity, {
       where: {
         appleId,
+        status: UserStatus.active,
       },
     });
   }
@@ -49,6 +52,7 @@ export class UserService {
     return await this.dataSource.manager.findOne(UserEntity, {
       where: {
         deviceId,
+        status: UserStatus.active,
       },
     });
   }
@@ -235,8 +239,14 @@ export class UserService {
   }
 
   async deleteUser(userId: string) {
-    return await this.dataSource.manager.delete(UserEntity, {
-      id: userId,
-    });
+    return await this.dataSource.manager.update(
+      UserEntity,
+      {
+        id: userId,
+      },
+      {
+        status: UserStatus.deleted,
+      },
+    );
   }
 }

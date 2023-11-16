@@ -24,6 +24,12 @@ export enum SubscriberStatus {
   trialing = 'trialing',
   paused = 'paused',
 }
+
+export enum UserStatus {
+  active = 'active',
+  deleted = 'deleted',
+}
+
 @Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -52,6 +58,14 @@ export class UserEntity {
     default: 0,
   })
   balance: number;
+
+  @ApiProperty()
+  @Column({
+    type: 'varchar',
+    enum: UserStatus,
+    default: UserStatus.active,
+  })
+  status: UserStatus;
 
   @CreateDateColumn({ name: 'expirationDate' })
   expirationDate: Date;

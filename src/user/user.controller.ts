@@ -2,12 +2,12 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Logger,
   NotFoundException,
   Param,
   Post,
-  Delete,
   Query,
   UseGuards,
   UsePipes,
@@ -246,6 +246,10 @@ export class UserController {
   })
   @UsePipes(new ValidationPipe({ transform: true }))
   async deleteUser(@Param() params: { userId: string }) {
+    const user = await this.userService.getUserById(params.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     return await this.userService.deleteUser(params.userId);
   }
 }
