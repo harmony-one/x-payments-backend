@@ -10,6 +10,7 @@ import { IsString, IsUUID } from 'class-validator';
 
 @Entity({ name: 'withdrawals' })
 export class WithdrawEntity {
+  @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -21,6 +22,7 @@ export class WithdrawEntity {
   })
   userId: string;
 
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'integer',
@@ -28,6 +30,7 @@ export class WithdrawEntity {
   })
   tokensAmount: number;
 
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'integer',
@@ -35,6 +38,7 @@ export class WithdrawEntity {
   })
   creditsAmount: number;
 
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'integer',
@@ -42,6 +46,7 @@ export class WithdrawEntity {
   })
   balanceBefore: number;
 
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'integer',
@@ -49,9 +54,11 @@ export class WithdrawEntity {
   })
   balanceAfter: number;
 
+  @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
+  @ApiProperty()
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }

@@ -5,8 +5,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import configuration from './config';
-import { StripeController } from './stripe/stripe.controller';
-import { StripeService } from './stripe/stripe.service';
 import entities from './typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { UserModule } from './user/user.module';
@@ -39,7 +37,7 @@ import { AppstoreModule } from './appstore/appstore.module';
     UserModule,
     AppstoreModule,
   ],
-  controllers: [AppController, StripeController],
-  providers: [AppService, StripeService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

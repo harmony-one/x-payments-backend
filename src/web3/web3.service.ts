@@ -34,17 +34,6 @@ export class Web3Service {
     );
   }
 
-  async getCheckoutUsdAmount(amountOne: string): Promise<string> {
-    const minAmount = this.configService.get('stripe.checkoutMinAmount');
-    const oneRate = await this.getTokenPrice('harmony');
-    const value = (oneRate * +amountOne) / Math.pow(10, 18);
-    const usdCents = Math.ceil(value * 100);
-    if (minAmount) {
-      return Math.max(usdCents, minAmount).toString();
-    }
-    return usdCents.toString();
-  }
-
   async getAddressBalance(address: string) {
     return await this.web3.eth.getBalance(address);
     // return web3.utils.toWei(balance);

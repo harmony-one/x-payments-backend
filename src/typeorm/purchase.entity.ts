@@ -10,6 +10,7 @@ import { IsObject, IsString, IsUUID } from 'class-validator';
 
 @Entity({ name: 'purchases' })
 export class PurchaseEntity {
+  @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -37,6 +38,7 @@ export class PurchaseEntity {
   })
   productId: string;
 
+  @ApiProperty()
   @IsString()
   @Column({
     type: 'integer',
@@ -53,9 +55,11 @@ export class PurchaseEntity {
   })
   transaction: object;
 
+  @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
+  @ApiProperty()
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }
