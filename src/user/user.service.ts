@@ -115,14 +115,11 @@ export class UserService {
   }
 
   getCreditsByProductId(productId: string) {
-    if (productId === 'com.country.app.purchase.3day') {
-      return 0;
-    }
-    return 100;
+    return 0;
   }
 
   getSubscriptionDaysByProductId(productId: string) {
-    if (productId === 'com.country.app.purchase.3day') {
+    if (productId === 'com.country.x.purchase.3day') {
       return 3;
     }
     return 0;
