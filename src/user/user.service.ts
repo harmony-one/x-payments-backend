@@ -68,7 +68,7 @@ export class UserService {
     const user = result.raw[0];
 
     this.logger.log(
-      `Created new user, deviceId: ${dto.deviceId}, userId: ${user.id}`,
+      `Created new user ${user.id}, appleId: ${dto.appleId}, deviceId: ${dto.deviceId}`,
     );
 
     return user;

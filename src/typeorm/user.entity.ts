@@ -1,4 +1,7 @@
 import {
+  AfterInsert,
+  AfterLoad,
+  AfterUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -6,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export enum UserStatus {
   active = 'active',
@@ -54,6 +57,17 @@ export class UserEntity {
   @ApiProperty()
   @CreateDateColumn({ name: 'expirationDate' })
   expirationDate: Date;
+
+  @IsBoolean()
+  @IsOptional()
+  protected isSubscriptionActive = false;
+
+  @AfterLoad()
+  @AfterInsert()
+  @AfterUpdate()
+  generateIsSubscriptionActive(): void {
+    this.isSubscriptionActive = Date.now() <= this.expirationDate.valueOf();
+  }
 
   @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
