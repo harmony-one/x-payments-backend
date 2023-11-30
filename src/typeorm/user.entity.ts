@@ -70,6 +70,14 @@ export class UserEntity {
   }
 
   @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  appVersion: string;
+
+  @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 

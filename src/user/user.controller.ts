@@ -22,6 +22,7 @@ import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { AppstoreService } from '../appstore/appstore.service';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
 import * as moment from 'moment';
+import { UpdateUserDto } from './dto/update.user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -251,5 +252,23 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
     return await this.userService.deleteUser(params.userId);
+  }
+
+  @Post('/:userId/update')
+  @UseGuards(ApiKeyGuard)
+  @ApiSecurity('X-API-KEY')
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    description: 'User UUID',
+    schema: { oneOf: [{ type: 'string' }] },
+  })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async setAppVersion(
+    @Param() params: { userId: string },
+    @Body() dto: UpdateUserDto,
+  ): Promise<UserEntity> {
+    await this.userService.updateUser(params.userId, dto);
+    return await this.userService.getUserById(params.userId);
   }
 }

@@ -11,7 +11,7 @@ import { WithdrawDto } from './dto/withdraw.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
-import { UpdateDto } from './dto/update.dto';
+import { UpdateUserDto } from './dto/update.user.dto';
 import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
 import { UserStatus } from '../typeorm/user.entity';
 
@@ -187,19 +187,16 @@ export class UserService {
     );
   }
 
-  async updateUser(userId: string, dto: UpdateDto): Promise<UserEntity> {
-    const { deviceId, appleId } = dto;
+  async updateUser(userId: string, dto: UpdateUserDto) {
+    const { appVersion } = dto;
 
-    const partialEntity: { deviceId?: string; appleId?: string } = {};
+    const partialEntity: { appVersion?: string } = {};
 
-    if (deviceId) {
-      partialEntity.deviceId = deviceId;
-    }
-    if (appleId) {
-      partialEntity.appleId = appleId;
+    if (appVersion) {
+      partialEntity.appVersion = appVersion;
     }
 
-    await this.dataSource.manager.update(
+    return await this.dataSource.manager.update(
       UserEntity,
       {
         id: userId,
@@ -208,7 +205,6 @@ export class UserService {
         ...partialEntity,
       },
     );
-    return this.getUserById(userId);
   }
 
   async getUserPayments(userId: string, dto: PurchaseListDto) {
