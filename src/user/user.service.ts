@@ -62,6 +62,7 @@ export class UserService {
     const result = await this.dataSource.manager.insert(UserEntity, {
       appleId: dto.appleId,
       deviceId: dto.deviceId,
+      appVersion: dto.appVersion,
       balance,
     });
 

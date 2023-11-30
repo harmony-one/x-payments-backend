@@ -11,4 +11,9 @@ export class CreateUserDto {
   @ApiProperty()
   @IsOptional()
   deviceId?: string;
+
+  @IsString()
+  @ApiProperty()
+  @IsOptional()
+  appVersion?: string;
 }
