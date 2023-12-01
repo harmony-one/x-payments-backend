@@ -7,7 +7,7 @@ import {
 import { DataSource } from 'typeorm';
 import { PurchaseEntity, UserEntity, WithdrawEntity } from '../typeorm';
 import { ConfigService } from '@nestjs/config';
-import { WithdrawDto } from './dto/withdraw.dto';
+import { SpendCreditsDto } from './dto/spend.credits.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { RefillDto } from './dto/refill.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
@@ -75,9 +75,9 @@ export class UserService {
     return user;
   }
 
-  async withdraw(
+  async spendCredits(
     userId: string,
-    dto: WithdrawDto,
+    dto: SpendCreditsDto,
     creditsAmount: number,
   ): Promise<UserEntity> {
     const { tokensAmount } = dto;

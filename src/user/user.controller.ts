@@ -16,7 +16,7 @@ import {
 import { ApiOkResponse, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UserEntity } from '../typeorm';
-import { WithdrawDto } from './dto/withdraw.dto';
+import { SpendCreditsDto } from './dto/spend.credits.dto';
 import { CreateUserDto } from './dto/create.user.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { AppstoreService } from '../appstore/appstore.service';
@@ -158,12 +158,12 @@ export class UserController {
     schema: { oneOf: [{ type: 'string' }] },
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async withdraw(
+  async spend(
     @Param() params: { userId: string },
-    @Body() dto: WithdrawDto,
+    @Body() dto: SpendCreditsDto,
   ): Promise<UserEntity> {
-    const creditsAmount = Math.round(dto.tokensAmount / 10);
-    return await this.userService.withdraw(params.userId, dto, creditsAmount);
+    const amount = Math.round(dto.tokensAmount / 10);
+    return await this.userService.spendCredits(params.userId, dto, amount);
   }
 
   // @Post('/refill')
@@ -180,7 +180,7 @@ export class UserController {
     schema: { oneOf: [{ type: 'string' }] },
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async appStorePurchase(
+  async purchaseSubscription(
     @Param() params: { userId: string },
     @Body() dto: AppStorePurchaseDto,
   ): Promise<UserEntity> {
@@ -264,7 +264,7 @@ export class UserController {
     schema: { oneOf: [{ type: 'string' }] },
   })
   @UsePipes(new ValidationPipe({ transform: true }))
-  async setAppVersion(
+  async updateUser(
     @Param() params: { userId: string },
     @Body() dto: UpdateUserDto,
   ): Promise<UserEntity> {
