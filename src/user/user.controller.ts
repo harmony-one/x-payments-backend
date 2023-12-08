@@ -117,7 +117,8 @@ export class UserController {
       }
     }
 
-    return await this.userService.createUser(dto);
+    const user = await this.userService.createUser(dto);
+    return await this.userService.getUserById(user.id);
   }
 
   @Post('/:userId/spend')
