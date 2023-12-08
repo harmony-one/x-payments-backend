@@ -5,7 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import configuration from './config';
-import entities from './typeorm';
+import { typeormConfig } from './config/typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { UserModule } from './user/user.module';
 import { AppstoreModule } from './appstore/appstore.module';
@@ -14,22 +14,13 @@ import { AppstoreModule } from './appstore/appstore.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [configuration],
+      load: [typeormConfig, configuration],
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get('DATABASE_URL'),
-        host: configService.get('DB_HOST'),
-        port: +configService.get<number>('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_NAME'),
-        entities: entities,
-        synchronize: true,
-      }),
       inject: [ConfigService],
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) =>
+        configService.get('typeorm'),
     }),
     // Web3Module,
     HttpModule,
