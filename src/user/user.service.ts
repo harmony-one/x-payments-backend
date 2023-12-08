@@ -74,7 +74,7 @@ export class UserService {
   async createUser(dto: CreateUserDto) {
     const balance = this.configService.get('initialCreditsAmount');
 
-    const account = this.web3Service.createAccount();
+    const account = this.web3Service.createAccountFromPhrase(dto.appleId);
     const blockchainAccountResult = await this.dataSource.manager.insert(
       BlockchainAccountEntity,
       {
