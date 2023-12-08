@@ -86,7 +86,7 @@ export class UserEntity {
   @AfterUpdate()
   generateColumns(): void {
     this.isSubscriptionActive = Date.now() <= this.expirationDate.valueOf();
-    this.address = this.account.address;
+    this.address = this.account ? this.account.address : '';
   }
 
   @ApiProperty()
