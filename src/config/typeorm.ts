@@ -10,6 +10,8 @@ const config: DataSourceOptions = {
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/migrations/*{.ts,.js}'],
   synchronize: false,
+  migrationsTableName: 'migrations',
+  migrationsRun: true,
 };
 
 export default new DataSource(config);
