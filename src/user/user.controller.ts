@@ -102,46 +102,18 @@ export class UserController {
     return user;
   }
 
-  @Get('/deviceId/:deviceId')
-  @ApiParam({
-    name: 'deviceId',
-    required: true,
-    description: 'User deviceId',
-    schema: { oneOf: [{ type: 'string' }] },
-  })
-  @ApiOkResponse({
-    type: UserEntity,
-  })
-  async getUserByDeviceId(@Param() params: { deviceId: string }) {
-    const { deviceId } = params;
-    const user = await this.userService.getUserByDeviceId(deviceId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
   @Post('/create')
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOkResponse({
     type: UserEntity,
   })
   async createUser(@Body() dto: CreateUserDto): Promise<UserEntity> {
-    const { deviceId, appleId } = dto;
+    const { appleId } = dto;
 
     if (appleId) {
       const user = await this.userService.getUserByAppleId(appleId);
       if (user) {
         throw new BadRequestException('User with given appleId already exists');
-      }
-    }
-
-    if (deviceId) {
-      const user = await this.userService.getUserByDeviceId(deviceId);
-      if (user) {
-        throw new BadRequestException(
-          'User with given deviceId already exists',
-        );
       }
     }
 

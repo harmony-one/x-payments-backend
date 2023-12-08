@@ -5,7 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { BlockchainAccountEntity, PurchaseEntity, UserEntity, WithdrawEntity } from "../typeorm";
+import {
+  BlockchainAccountEntity,
+  PurchaseEntity,
+  UserEntity,
+  WithdrawEntity,
+} from '../typeorm';
 import { ConfigService } from '@nestjs/config';
 import { SpendCreditsDto } from './dto/spend.credits.dto';
 import { CreateUserDto } from './dto/create.user.dto';
@@ -14,6 +19,7 @@ import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
 import { UserStatus } from '../typeorm/user.entity';
+import { Web3Service } from '../web3/web3.service';
 
 @Injectable()
 export class UserService {
@@ -21,9 +27,15 @@ export class UserService {
   constructor(
     private dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly web3Service: Web3Service,
   ) {}
   async getUserById(id: string) {
     return await this.dataSource.manager.findOne(UserEntity, {
+      select: {
+        account: {
+          address: true,
+        },
+      },
       where: {
         id,
         status: UserStatus.active,
@@ -44,18 +56,17 @@ export class UserService {
 
   async getUserByAppleId(appleId: string) {
     return await this.dataSource.manager.findOne(UserEntity, {
+      select: {
+        account: {
+          address: true,
+        },
+      },
       where: {
         appleId,
         status: UserStatus.active,
       },
-    });
-  }
-
-  async getUserByDeviceId(deviceId: string) {
-    return await this.dataSource.manager.findOne(UserEntity, {
-      where: {
-        deviceId,
-        status: UserStatus.active,
+      relations: {
+        account: true,
       },
     });
   }
@@ -63,14 +74,15 @@ export class UserService {
   async createUser(dto: CreateUserDto) {
     const balance = this.configService.get('initialCreditsAmount');
 
-    const account = new BlockchainAccountEntity()
-    account.privateKey = 'test_pk'
-    account.address = 'test_address'
+    const account = this.web3Service.createAccount();
     const blockchainAccountResult = await this.dataSource.manager.insert(
       BlockchainAccountEntity,
-      account,
+      {
+        privateKey: account.privateKey,
+        address: account.address,
+      },
     );
-    const blockchainAccount = blockchainAccountResult.raw[0]
+    const blockchainAccount = blockchainAccountResult.raw[0];
 
     const result = await this.dataSource.manager.insert(UserEntity, {
       appleId: dto.appleId,

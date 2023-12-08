@@ -65,13 +65,6 @@ export class UserEntity {
   @IsOptional()
   protected isSubscriptionActive = false;
 
-  @AfterLoad()
-  @AfterInsert()
-  @AfterUpdate()
-  generateIsSubscriptionActive(): void {
-    this.isSubscriptionActive = Date.now() <= this.expirationDate.valueOf();
-  }
-
   @ApiProperty()
   @IsString()
   @Column({
@@ -80,9 +73,21 @@ export class UserEntity {
   })
   appVersion: string;
 
+  @IsBoolean()
+  @IsOptional()
+  protected address = '';
+
   @OneToOne(() => BlockchainAccountEntity, (account) => account.user)
   @JoinColumn({ name: 'address' })
   account: BlockchainAccountEntity;
+
+  @AfterLoad()
+  @AfterInsert()
+  @AfterUpdate()
+  generateColumns(): void {
+    this.isSubscriptionActive = Date.now() <= this.expirationDate.valueOf();
+    this.address = this.account.address;
+  }
 
   @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
