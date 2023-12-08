@@ -58,6 +58,30 @@ export class UserEntity {
   @CreateDateColumn({ name: 'expirationDate' })
   expirationDate: Date;
 
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  appVersion: string;
+
+  @ApiProperty()
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+  })
+  address: string;
+
+  @IsString()
+  @Column({
+    type: 'varchar',
+    default: '',
+    select: false,
+  })
+  privateKey: string;
+
   @IsBoolean()
   @IsOptional()
   protected isSubscriptionActive = false;
@@ -68,14 +92,6 @@ export class UserEntity {
   generateIsSubscriptionActive(): void {
     this.isSubscriptionActive = Date.now() <= this.expirationDate.valueOf();
   }
-
-  @ApiProperty()
-  @IsString()
-  @Column({
-    type: 'varchar',
-    default: '',
-  })
-  appVersion: string;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })

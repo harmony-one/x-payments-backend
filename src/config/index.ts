@@ -15,6 +15,7 @@ export default () => ({
   initialCreditsAmount: parseInt(process.env.INITIAL_CREDITS_AMOUNT, 10) || 100,
   web3: {
     rpcUrl: process.env.RPC_URL || 'https://api.harmony.one',
+    secretPhrase: process.env.SECRET_PHRASE || '',
   },
   appStore: {
     key: process.env.APP_STORE_KEY || '',
