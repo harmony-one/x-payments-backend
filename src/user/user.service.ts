@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { PurchaseEntity, UserEntity, WithdrawEntity } from '../typeorm';
+import { BlockchainAccountEntity, PurchaseEntity, UserEntity, WithdrawEntity } from "../typeorm";
 import { ConfigService } from '@nestjs/config';
 import { SpendCreditsDto } from './dto/spend.credits.dto';
 import { CreateUserDto } from './dto/create.user.dto';
@@ -27,6 +27,9 @@ export class UserService {
       where: {
         id,
         status: UserStatus.active,
+      },
+      relations: {
+        account: true,
       },
     });
   }
@@ -59,17 +62,27 @@ export class UserService {
 
   async createUser(dto: CreateUserDto) {
     const balance = this.configService.get('initialCreditsAmount');
+
+    const account = new BlockchainAccountEntity()
+    account.privateKey = 'test_pk'
+    account.address = 'test_address'
+    const blockchainAccountResult = await this.dataSource.manager.insert(
+      BlockchainAccountEntity,
+      account,
+    );
+    const blockchainAccount = blockchainAccountResult.raw[0]
+
     const result = await this.dataSource.manager.insert(UserEntity, {
       appleId: dto.appleId,
       deviceId: dto.deviceId,
       appVersion: dto.appVersion,
       balance,
+      account: blockchainAccount,
     });
-
     const user = result.raw[0];
 
     this.logger.log(
-      `Created new user ${user.id}, appleId: ${dto.appleId}, deviceId: ${dto.deviceId}`,
+      `Created new user ${user.id}, appleId: ${dto.appleId}, blockchain address: ${blockchainAccount.address}`,
     );
 
     return user;

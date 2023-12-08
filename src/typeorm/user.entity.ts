@@ -5,11 +5,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { BlockchainAccountEntity } from './blockchain.account.entity';
 
 export enum UserStatus {
   active = 'active',
@@ -76,6 +79,10 @@ export class UserEntity {
     default: '',
   })
   appVersion: string;
+
+  @OneToOne(() => BlockchainAccountEntity, (account) => account.user)
+  @JoinColumn({ name: 'address' })
+  account: BlockchainAccountEntity;
 
   @ApiProperty()
   @CreateDateColumn({ name: 'createdAt' })
