@@ -54,4 +54,13 @@ export class Web3Service {
   createAccount() {
     return this.web3.eth.accounts.create();
   }
+
+  createAccountFromPhrase(phrase: string) {
+    const secret = this.configService.get('web3.secretPhrase');
+    const privateKey = this.web3.utils.sha3(`${secret}_${phrase}`);
+    if (privateKey) {
+      return this.web3.eth.accounts.privateKeyToAccount(privateKey);
+    }
+    throw new Error('Cannot generate private key from ' + phrase);
+  }
 }

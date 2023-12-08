@@ -95,6 +95,7 @@ export class UserController {
     const { appleId } = params;
 
     const user = await this.userService.getUserByAppleId(appleId);
+    console.log('user', user)
     if (!user) {
       throw new NotFoundException('User not found');
     }

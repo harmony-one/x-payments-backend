@@ -14,6 +14,7 @@ import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
 import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
 import { UserStatus } from '../typeorm/user.entity';
+import { Web3Service } from '../web3/web3.service';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,7 @@ export class UserService {
   constructor(
     private dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly web3Service: Web3Service,
   ) {}
   async getUserById(id: string) {
     return await this.dataSource.manager.findOne(UserEntity, {
@@ -59,17 +61,23 @@ export class UserService {
 
   async createUser(dto: CreateUserDto) {
     const balance = this.configService.get('initialCreditsAmount');
+
+    const blockchainAccount = this.web3Service.createAccountFromPhrase(
+      dto.appleId,
+    );
     const result = await this.dataSource.manager.insert(UserEntity, {
       appleId: dto.appleId,
       deviceId: dto.deviceId,
       appVersion: dto.appVersion,
       balance,
+      address: blockchainAccount.address,
+      privateKey: blockchainAccount.privateKey,
     });
 
     const user = result.raw[0];
 
     this.logger.log(
-      `Created new user ${user.id}, appleId: ${dto.appleId}, deviceId: ${dto.deviceId}`,
+      `Created new user ${user.id}, appleId: ${dto.appleId}, address: ${user.address}`,
     );
 
     return user;
