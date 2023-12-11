@@ -1,5 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 import * as process from 'process';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Web3 = require('web3');
 
 const web3 = new Web3();

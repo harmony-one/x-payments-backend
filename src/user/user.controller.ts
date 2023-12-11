@@ -21,8 +21,9 @@ import { CreateUserDto } from './dto/create.user.dto';
 import { AppStorePurchaseDto, PurchaseListDto } from './dto/purchase.dto';
 import { AppstoreService } from '../appstore/appstore.service';
 import { ApiKeyGuard } from '../auth/ApiKeyGuard';
-import * as moment from 'moment';
+import moment from 'moment';
 import { UpdateUserDto } from './dto/update.user.dto';
+import { GetUsersDto } from './dto/get.users.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -95,7 +96,6 @@ export class UserController {
     const { appleId } = params;
 
     const user = await this.userService.getUserByAppleId(appleId);
-    console.log('user', user)
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -120,6 +120,18 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  @ApiSecurity('X-API-KEY')
+  @Get('/')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @UseGuards(ApiKeyGuard)
+  @ApiOkResponse({
+    type: UserEntity,
+    isArray: true,
+  })
+  async getUsers(@Query() dto: GetUsersDto) {
+    return await this.userService.getUsers(dto);
   }
 
   @Post('/create')

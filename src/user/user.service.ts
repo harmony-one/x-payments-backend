@@ -15,6 +15,7 @@ import { UpdateUserDto } from './dto/update.user.dto';
 import { JWSTransactionDecodedPayload } from 'app-store-server-api/dist/types/Models';
 import { UserStatus } from '../typeorm/user.entity';
 import { Web3Service } from '../web3/web3.service';
+import { GetUsersDto } from './dto/get.users.dto';
 
 @Injectable()
 export class UserService {
@@ -252,5 +253,17 @@ export class UserService {
     );
     this.logger.log(`Deleted user ${userId}`);
     return res;
+  }
+
+  async getUsers(dto: GetUsersDto) {
+    const { offset, limit } = dto;
+
+    return await this.dataSource.manager.find(UserEntity, {
+      skip: offset,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
   }
 }
